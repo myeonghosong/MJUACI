@@ -1,4 +1,4 @@
-// 1440펄스 
+// 1440 펄스 / 4 
 #define en_chA 2
 #define en_chB 3
 #define md_in1 5
