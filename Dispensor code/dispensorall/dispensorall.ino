@@ -55,7 +55,7 @@ void setup() {
   pinMode(4,OUTPUT); //스위치
   pinMode(5,OUTPUT); //회수시스템
   pinMode(6,OUTPUT);
-  pinMode(7,INPUT); //차량출입센서
+  pinMode(3,OUTPUT); //차량출입센서
 
   digitalWrite(4,LOW);
   while(1)
@@ -76,6 +76,9 @@ void setup() {
 unsigned long long lastMs;
 
 void loop() {
+
+  carsensor = map(analogRead(3), 0, 1023, 0, 5000);
+
   if(millis()-lastMs >= 1000)
   {
     lastMs=millis();
@@ -97,17 +100,22 @@ void loop() {
       Serial.printf("back\n");
       cable = 4;
     }
-
+    if(carsensor >= 10000){
+      car++;
+    }
+    else if(carsensor < 10000){
+      car = 0;
+    }
     Serial.println(carsensor);
+    Serial.println(car);
+
+    if(car == 3){
+      myMQTTClient.publish("MJU/CD4/CHARGING/CAR","IN");
+    }
   }
-  carsensor = map(analogread(7), 0, 1023, 0, 5000);
   
-  if(carsensor >= 600){
-    car = 1;
-  }
-  else if(carsensor < 600{
-    car = 0;
-  })
+
+
 
   myMQTTClient.loop();
 }
