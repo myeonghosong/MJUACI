@@ -1,4 +1,4 @@
-import psycopg2
+import psycopg2  #https://studying-haeung.tistory.com/18
 
 # PostgreSQL 연결 정보 설정
 connection = psycopg2.connect(
@@ -12,7 +12,7 @@ connection = psycopg2.connect(
 cursor = connection.cursor()
 
 # SQL 쿼리 작성
-sql_query = "SELECT user_phone, car_licenseplate, car_model, car_portlocation FROM your_table_name WHERE car_licenseplate = '404명0118'"
+sql_query = "SELECT user_phone, car_licenseplate, car_model, car_portlocation FROM user_infor WHERE car_licenseplate = '404명0118'"
 
 # 쿼리 실행
 cursor.execute(sql_query)
