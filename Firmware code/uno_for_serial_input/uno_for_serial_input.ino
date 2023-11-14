@@ -91,28 +91,55 @@ void loop()
   */
 
   if(Serial.available()){
+    dc_stop();
+    Serial.println("Please input data!");
     target = Serial.parseInt();
     if(target != 0){
+      if(target > 0) start_flag = 0;
+      else if(target < 0) start_flag = -1;
+
+      target = abs(target);      
       Serial.print("Input data : "); Serial.println(target);
-      target_pulse = target / distance_per_pulse - 10;
-      Serial.print("Target rotation count : "); Serial.println(target_pulse);
-      
-      delay(1000);
+      target_pulse1 = (target / distance_per_pulse) - 10;
+      target_pulse2 = (target / distance_per_pulse) - 10;
+      Serial.print("Target rotation count : "); Serial.println(target_pulse1+10);
+
+      if(target == 12345) { //left
+        start_flag = 2;
+        target_pulse1 = (260 / distance_per_pulse) - 10;
+        target_pulse2 = (260 / distance_per_pulse) - 10;
+      }
+      if(target == 23456) { //right
+        start_flag = 3;
+        target_pulse1 = (260 / distance_per_pulse) - 10;
+        target_pulse2 = (260 / distance_per_pulse) - 10;
+      }
+
       while(1){
         if(start_flag == 0) {
           dc_forward();
           start_flag = 1;
         }
-
-        if(prev_rot_count1 != count1){
-          prev_rot_count1 = count1;
+        else if(start_flag == -1){
+          dc_backward();
+          start_flag = 1;
+        }
+        else if(start_flag == 2){
+          dc_left();
+          start_flag = 1;
+        }
+        else if(start_flag == 3){
+          dc_right();
+          start_flag = 1;
         }
 
-        if(prev_rot_count2 != count2){
-          prev_rot_count2 = count2;
+        if(prev_rot_count1 != count1) prev_rot_count1 = count1;
+        if(prev_rot_count2 != count2) prev_rot_count2 = count2;
+
+        if(left_flag == 0 || right_flag == 0){
+          Serial.print("Left count : "); Serial.print(prev_rot_count1);
+          Serial.print("  Right count : "); Serial.println(prev_rot_count2);
         }
-        Serial.print("Left count : "); Serial.print(prev_rot_count1);
-        Serial.print("  Right count : "); Serial.println(prev_rot_count2);
 
         if(prev_rot_count1 == target_pulse1){
           left_stop();
@@ -120,20 +147,27 @@ void loop()
         }
         if(prev_rot_count2 == target_pulse2){
           right_stop();
-          left_flag = 1;
+          right_flag = 1;
         }
 
         if(left_flag == 1 && right_flag == 1){
-          count1 = 0;
-          count2 = 0;
-          left_flag = 0;
-          right_flag = 0;
-          start_flag = 0;
+          resetencode();
           break;
         }
       }
     }
   }
+}
+
+void resetencode(){
+  Serial.println("Sensor Reset!");
+  count1 = 0;
+  count2 = 0;
+  left_flag = 0;
+  right_flag = 0;
+  start_flag = 0;
+  prev_rot_count1 = 0;
+  prev_rot_count2 = 0;
 }
 
 void intfunc1(){
@@ -204,9 +238,9 @@ void right_stop(){
 }
 
 void dc_forward(){
-  analogWrite(motorpin1, 50);
+  analogWrite(motorpin1, 100);
   analogWrite(motorpin2, 0);
-  analogWrite(motorpin3, 50);
+  analogWrite(motorpin3, 100);
   analogWrite(motorpin4, 0);
   Serial.println("Forward");
 }
