@@ -2,11 +2,11 @@ int carsensor;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(A0,INPUT);
+  pinMode(A2,INPUT);
 }
 
 void loop() {
-  carsensor = analogRead(A0);
+  carsensor = analogRead(A2);
   Serial.println(carsensor);
   delay(200);
 }
