@@ -6,6 +6,7 @@ import time
 import spidev
 import sys
 
+SystemAllFlag = 0
 frame = None
 t = None
 t_cir = None
@@ -38,7 +39,7 @@ def readChannel(channel):
     return data
 
 def on_message(client, userdata, message): #MQTT콜백
-    global RobotStep, light,YYY, ZZZ
+    global RobotStep, light,YYY, ZZZ,SystemAllFlag
 
     print("message received : ", str(message.payload.decode("utf-8")))
     print("message topic= ", message.topic)
@@ -62,6 +63,31 @@ def on_message(client, userdata, message): #MQTT콜백
             YYY = 0
             ZZZ = 0
 
+    if message.topic == "MJU/CD4/CHARGING/CAR":
+        if str(message.payload.decode("utf-8")) == "IN": #차량 진입->해당위치로 이동 단계
+            SystemAllFlag = 1
+        elif str(message.payload.decode("utf-8")) == "FindCARNUM": #번호판 인식단계
+            SystemAllFlag = 2
+        elif str(message.payload.decode("utf-8")) == "FindConnector": #커넥터 찾아서 잡는 단계
+            SystemAllFlag = 3
+        elif str(message.payload.decode("utf-8")) == "GoToPort": #차량 충전구로 이동 단계
+            SystemAllFlag = 4
+        elif str(message.payload.decode("utf-8")) == "FindPort": #충전구 탐색 및 삽입 단계
+            SystemAllFlag = 5
+        elif str(message.payload.decode("utf-8")) == "Success": #충전연결 성공, 커넥터 꽂은채로 로봇팔 회수 단계
+            SystemAllFlag = 6
+        elif str(message.payload.decode("utf-8")) == "BackForWaiting": #로봇 원래자리로 돌아가는 단계
+            SystemAllFlag = 7
+        elif str(message.payload.decode("utf-8")) == "WaitingCharge": #충전완료까지 대기하는 단계
+            SystemAllFlag = 8
+        elif str(message.payload.decode("utf-8")) == "StopCharging": #충전정지신호 받고 로봇 충전구로 이동하는 단계
+            SystemAllFlag = 9
+        elif str(message.payload.decode("utf-8")) == "PullConnector": #커넥터 찾아서 잡고 전자서 켜서 뽑는 단계
+            SystemAllFlag = 10
+        elif str(message.payload.decode("utf-8")) == "PutConnector": #커넥터 돌려놓으면서 회수시스템 작동 단계
+            SystemAllFlag = 11
+        elif str(message.payload.decode("utf-8")) == "CARINWaiting": #원점으로 돌아가는 단계 끝나면 SystemAllFlag = 0으로 돌아가서 반복
+            SystemAllFlag = 12
 def center_xy_Circle(flag):
     global frame, gray_cir, binary_cir, cnt_x_cir, cnt_y_cir, Circle, light
 
@@ -234,8 +260,8 @@ def motiondetect(im1,im2,im3):
     #cv2.imshow("Motion sensing", diff)
     print(diff_cnt)
 
-    if(diff_cnt > 30): flag = 0
-    elif(diff_cnt <= 30): flag = 1
+    if(diff_cnt > 20): flag = 0
+    elif(diff_cnt <= 20): flag = 1
 
 
 
