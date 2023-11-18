@@ -13,8 +13,8 @@
 
 SoftwareSerial mySerial(13,12);
 
-float wheel_dia = 102.44;
-float distance_per_pulse = wheel_dia * PI / 360;
+float wheel_dia = 322; //102.44;
+float distance_per_pulse = wheel_dia / 360;
 
 const byte interruptPin1 = 2; //left
 const byte interruptPin2 = 3; //right
@@ -33,6 +33,9 @@ int start_flag = 0;
 int target_value = 0;
 int current_value = 0;
 int temp = 0;
+int motor_speed = 85;
+
+int turn_factor = 230;
 
 void setup()
 {
@@ -103,16 +106,17 @@ void loop()
       target_pulse1 = (target / distance_per_pulse) - 10;
       target_pulse2 = (target / distance_per_pulse) - 10;
       Serial.print("Target rotation count : "); Serial.println(target_pulse1+10);
+      delay(1000);
 
       if(target == 12345) { //left
         start_flag = 2;
-        target_pulse1 = (260 / distance_per_pulse) - 10;
-        target_pulse2 = (260 / distance_per_pulse) - 10;
+        target_pulse1 = 230;
+        target_pulse2 = 230;
       }
       if(target == 23456) { //right
         start_flag = 3;
-        target_pulse1 = (260 / distance_per_pulse) - 10;
-        target_pulse2 = (260 / distance_per_pulse) - 10;
+        target_pulse1 = 230;
+        target_pulse2 = 230;//(turn_factor / distance_per_pulse) - 10;
       }
 
       while(1){
@@ -155,6 +159,7 @@ void loop()
           break;
         }
       }
+      
     }
   }
 }
@@ -238,34 +243,34 @@ void right_stop(){
 }
 
 void dc_forward(){
-  analogWrite(motorpin1, 100);
+  analogWrite(motorpin1, motor_speed);
   analogWrite(motorpin2, 0);
-  analogWrite(motorpin3, 100);
+  analogWrite(motorpin3, motor_speed);
   analogWrite(motorpin4, 0);
   Serial.println("Forward");
 }
 
 void dc_backward(){
   analogWrite(motorpin1, 0);
-  analogWrite(motorpin2, 100);
+  analogWrite(motorpin2, motor_speed);
   analogWrite(motorpin3, 0);
-  analogWrite(motorpin4, 100);
+  analogWrite(motorpin4, motor_speed);
   Serial.println("Backward");
 
 }
 
 void dc_left(){
-  analogWrite(motorpin1, 100);
+  analogWrite(motorpin1, motor_speed);
   analogWrite(motorpin2, 0);
   analogWrite(motorpin3, 0);
-  analogWrite(motorpin4, 100);
+  analogWrite(motorpin4, motor_speed);
   Serial.println("left");
 }
 
 void dc_right(){
   analogWrite(motorpin1, 0);
-  analogWrite(motorpin2, 100);
-  analogWrite(motorpin3, 100);
+  analogWrite(motorpin2, motor_speed);
+  analogWrite(motorpin3, motor_speed);
   analogWrite(motorpin4, 0);
   Serial.println("right");
 }
