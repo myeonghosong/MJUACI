@@ -88,12 +88,16 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
     }
     else if(strcmp(str, "StopCharging")==0){//충전정지신호 받고 로봇 충전구로 이동하는 단계
         SystemAllFlag = 9;
+        SystemDCmove = 20800; //커넥터 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        SystemFlag = 0;
     }
     else if(strcmp(str, "PullConnector")==0){//커넥터 찾아서 잡고 전자서 켜서 뽑는 단계
         SystemAllFlag = 10;
     }
     else if(strcmp(str, "PutConnector")==0){//커넥터 돌려놓으면서 회수시스템 작동 단계
         SystemAllFlag = 11;
+        SystemDCmove = 23800; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        SystemFlag = 0;
     }
     else if(strcmp(str, "CARINWaiting")==0){//원점으로 돌아가는 단계 끝나면 SystemAllFlag = 0으로 돌아가서 반복
         SystemAllFlag = 12;
@@ -123,48 +127,90 @@ void loop() {
         Serial2.print(SystemDCmove);  
     }
     else if(SystemAllFlag == 4){ //차량 충전구로 이동 단계
-        if(StepFlag == 0){ //모서리까지 움직이기
-            Serial2.print(StepDCmove);
-            StepFlag = 99;
-            StepDCmove = 27777;
+        if(SystemFlag == 0){ //모서리까지 움직이기
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+            SystemDCmove = 27777;
         }
-        else if(StepFlag == 1){// 코너 좌회전
-            Serial2.print(StepDCmove);
-            StepFlag = 99;
-            StepDCmove = 20800;
+        else if(SystemFlag == 1){// 코너 좌회전
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+            SystemDCmove = 20800;
         }
-        else if(StepFlag == 2){ // 충전구까지 이동
-            Serial2.print(StepDCmove);
-            StepFlag = 99;
+        else if(SystemFlag == 2){ // 충전구까지 이동
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
         }
     }
     else if(SystemAllFlag == 6){ //충전연결 성공, 커넥터 꽂은채로 로봇팔 회수 단계
 
     }
-    else if((SystemAllFlag == 7)||(SystemAllFlag == 12)){ //로봇 원래자리로 돌아가는 단계
-        if(StepFlag == 0){ //모서리까지 움직이기
-            Serial2.print(StepDCmove);
-            StepFlag = 99;
-            StepDCmove = 28888;
+    else if(SystemAllFlag == 7){ //로봇 원래자리로 돌아가는 단계
+        if(SystemFlag == 0){ //모서리까지 움직이기
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+            SystemDCmove = 28888;
         }
-        else if(StepFlag == 1){// 코너 좌회전
-            Serial2.print(StepDCmove);
-            StepFlag = 99;
-            StepDCmove = 24800;
+        else if(SystemFlag == 1){// 코너 우회전
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+            SystemDCmove = 24800;
         }
-        else if(StepFlag == 2){ // 충전구까지 이동
-            Serial2.print(StepDCmove);
-            StepFlag = 99;
+        else if(SystemFlag == 2){ // 커넥터위치
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+            SystemDCmove = 25000;
+        }
+        else if(SystemFlag == 3){ // 원점
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
         }
     }
     else if(SystemAllFlag == 9){ //충전정지신호 받고 로봇 충전구로 이동하는 단계
-
+        if(SystemFlag == 0){
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+            StepDC
+        }
+        else if(SystemFlag == 1){ //모서리까지 움직이기
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+            SystemDCmove = 27777;
+        }
+        else if(SystemFlag == 1){// 코너 좌회전
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+            SystemDCmove = 20800;
+        }
+        else if(SystemFlag == 2){ // 충전구까지 이동
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+        }
     }
     else if(SystemAllFlag == 11){ //커넥터 돌려놓으면서 회수시스템 작동 단계
-
+        if(SystemFlag == 0){ //모서리까지 움직이기
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+            SystemDCmove = 28888;
+        }
+        else if(SystemFlag == 1){// 코너 우회전
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+            SystemDCmove = 24800;
+        }
+        else if(SystemFlag == 2){ // 커넥터까지 이동
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+        }
+        else if(SystemFlag == 3){
+            // 서보로 뻗고 스텝으로 내려놓기
+        }
     }
     else if(SystemAllFlag == 12){ //원점으로 돌아가는 단계 끝나면 SystemAllFlag = 0으로 돌아가서 반복
-
+        if(SystemFlag == 0){ //모서리까지 움직이기
+            Serial2.print(SystemDCmove);
+            SystemFlag = 99;
+        }
     }
 
     else if((SystemAllFlag == 3)||(SystemAllFlag == 5)||(SystemAllFlag ==10)){ // 커넥터 잡기 or 충전구 삽입
