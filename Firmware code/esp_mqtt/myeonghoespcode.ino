@@ -4,6 +4,8 @@
 #include <Wire.h>
 
 int SystemAllFlag =0;
+int SystemDCmove = 0;
+int SystemFlag = 99;
 char mqttSysStep[] = "MJU/CD4/CHARGING/CAR";  //시스템 스텝
 
 int step_target = 0;
@@ -56,6 +58,8 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
   if (strcmp(topic, "MJU/CD4/CHARGING/CAR") == 0) {
     if (strcmp(str, "IN") == 0) { //차량 진입->해당위치로 이동 단계
         SystemAllFlag = 1;
+        SystemDCmove = 21200; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        SystemFlag = 0;
     }
     else if(strcmp(str, "FindCARNUM")==0){//번호판 인식단계
         SystemAllFlag = 2;
@@ -65,6 +69,8 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
     }
     else if(strcmp(str, "GoToPort")==0){//차량 충전구로 이동 단계
         SystemAllFlag = 4;
+        SystemDCmove = 20800; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        SystemFlag = 0;
     }
     else if(strcmp(str, "FindPort")==0){//충전구 탐색 및 삽입 단계
         SystemAllFlag = 5;
@@ -74,6 +80,8 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
     }
     else if(strcmp(str, "BackForWaiting")==0){//로봇 원래자리로 돌아가는 단계
         SystemAllFlag = 7;
+        SystemDCmove = 23800; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        SystemFlag = 0;
     }
     else if(strcmp(str, "WaitingCharge")==0){//충전완료까지 대기하는 단계
         SystemAllFlag = 8;
@@ -89,6 +97,8 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
     }
     else if(strcmp(str, "CARINWaiting")==0){//원점으로 돌아가는 단계 끝나면 SystemAllFlag = 0으로 돌아가서 반복
         SystemAllFlag = 12;
+        SystemDCmove = 23800; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        SystemFlag = 0;
     }
   }
 }
@@ -103,18 +113,49 @@ void setup() {
 
 void loop() {
   myMQTTClient.loop();
+
+  if(Serial2.available()>0){ // 우노가 수발광신호 받으면 다음스텝넘어가도록 플레그 쏴줌.
+    SystemFlag = Serial2.parseInt();
+  }
     
     if(SystemAllFlag == 1){ //차량 진입->해당충전기 커넥터 위치로 이동 단계
-        
+        if(SystemFlag)
+        Serial2.print(SystemDCmove);  
     }
     else if(SystemAllFlag == 4){ //차량 충전구로 이동 단계
-
+        if(StepFlag == 0){ //모서리까지 움직이기
+            Serial2.print(StepDCmove);
+            StepFlag = 99;
+            StepDCmove = 27777;
+        }
+        else if(StepFlag == 1){// 코너 좌회전
+            Serial2.print(StepDCmove);
+            StepFlag = 99;
+            StepDCmove = 20800;
+        }
+        else if(StepFlag == 2){ // 충전구까지 이동
+            Serial2.print(StepDCmove);
+            StepFlag = 99;
+        }
     }
     else if(SystemAllFlag == 6){ //충전연결 성공, 커넥터 꽂은채로 로봇팔 회수 단계
 
     }
-    else if(SystemAllFlag == 7){ //로봇 원래자리로 돌아가는 단계
-
+    else if((SystemAllFlag == 7)||(SystemAllFlag == 12)){ //로봇 원래자리로 돌아가는 단계
+        if(StepFlag == 0){ //모서리까지 움직이기
+            Serial2.print(StepDCmove);
+            StepFlag = 99;
+            StepDCmove = 28888;
+        }
+        else if(StepFlag == 1){// 코너 좌회전
+            Serial2.print(StepDCmove);
+            StepFlag = 99;
+            StepDCmove = 24800;
+        }
+        else if(StepFlag == 2){ // 충전구까지 이동
+            Serial2.print(StepDCmove);
+            StepFlag = 99;
+        }
     }
     else if(SystemAllFlag == 9){ //충전정지신호 받고 로봇 충전구로 이동하는 단계
 
