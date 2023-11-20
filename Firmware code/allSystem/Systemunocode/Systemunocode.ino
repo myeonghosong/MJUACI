@@ -29,6 +29,8 @@ int left_flag = 0;
 int right_flag = 0;
 int start_flag = 0;
 
+int checkpoint;
+
 int motor_speed = 85;
 int turn_factor = 230;
 
@@ -157,6 +159,15 @@ void setup()
               right_stop();
               right_flag = 1;
             }
+            
+            checkpoint = analogRead(A2);
+
+            if(checkpoint > 730){ // 체크포인트 흰색 나오면 멈춤
+              left_stop();
+              right_stop();
+              left_flag = 1;
+              right_flag = 1;
+            }
 
             if(left_flag == 1 && right_flag == 1){
               resetencode();
@@ -233,6 +244,7 @@ void motor_setup(){
   pinMode(motorpin2, OUTPUT);
   pinMode(motorpin3, OUTPUT);
   pinMode(motorpin4, OUTPUT);
+  pinMode(A2,INPUT);
 }
 
 void step_move(){
