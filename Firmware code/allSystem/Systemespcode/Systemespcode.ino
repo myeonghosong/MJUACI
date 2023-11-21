@@ -118,6 +118,11 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         SystemFlag = 0;
         Serial.println("CARINWaiting");
     }
+    else if(strcmp(DATA, "RESET") == 0){ //전체 시스템 리셋
+        SystemAllFlag = 99;
+        SystemFlag = 0;
+        Serial.println("RESET");
+    }
   }
 }
 
@@ -149,8 +154,8 @@ void loop() {
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
         }
-        
     }
+    
     else if(SystemAllFlag == 4){ //차량 충전구로 이동 단계
         if(SystemFlag == 0){ //모서리까지 움직이기
             Serial2.println(SystemDCmove);
@@ -264,6 +269,9 @@ void loop() {
             flagx = 1;
             }
         }
+    }
+    else if(SystemAllFlag == 99){
+        
     }
 }
 
