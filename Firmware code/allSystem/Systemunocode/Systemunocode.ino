@@ -31,7 +31,7 @@ int start_flag = 0;
 
 int checkpoint;
 
-int motor_speed = 85;
+int motor_speed = 60;
 int turn_factor = 230;
 
 int target_pix = 0;
