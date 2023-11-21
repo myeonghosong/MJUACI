@@ -59,7 +59,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
     
     if (strcmp(DATA, "IN") == 0) { //차량 진입->해당위치로 이동 단계
         SystemAllFlag = 1;
-        SystemDCmove = 20400; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        SystemDCmove = 22900; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
         SystemFlag = 0;
         Serial.println("IN");
     }
