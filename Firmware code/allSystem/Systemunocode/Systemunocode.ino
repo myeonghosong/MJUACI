@@ -12,8 +12,10 @@
 
 SoftwareSerial mySerial(13,12);
 
+int motor_speed = 100;
 float wheel_dia = 322; //102.44;
 float distance_per_pulse = wheel_dia / 360;
+float turn_factor = ((270*PI)/4)/distance_per_pulse;
 
 const byte interruptPin1 = 2; //left
 const byte interruptPin2 = 3; //right
@@ -31,8 +33,7 @@ int start_flag = 0;
 
 int checkpoint;
 
-int motor_speed = 60;
-int turn_factor = 230;
+
 
 int target_pix = 0;
 int target_mm = 0;
@@ -117,13 +118,13 @@ void setup()
           Serial.print("Target rotation count : "); Serial.println(target_pulse1+10);
           if(dc_target == 7777) { //left
             start_flag = 2;
-            target_pulse1 = 230;
-            target_pulse2 = 230;
+            target_pulse1 = turn_factor;
+            target_pulse2 = turn_factor;
           }
           if(dc_target == 8888) { //right
             start_flag = 3;
-            target_pulse1 = 230;
-            target_pulse2 = 230;//(turn_factor / distance_per_pulse) - 10;
+            target_pulse1 = turn_factor;
+            target_pulse2 = turn_factor;//(turn_factor / distance_per_pulse) - 10;
           } 
           while(1){
             if(start_flag == 0) {
@@ -161,14 +162,18 @@ void setup()
             }
             
             checkpoint = analogRead(A2);
-
-            if(checkpoint > 730){ // 체크포인트 흰색 나오면 멈춤
+            
+          
+            if(checkpoint < 950){ // 체크포인트 흰색 나오면 멈춤
+              Serial.println("체크포인트 도달");
+              
               left_stop();
               right_stop();
               left_flag = 1;
               right_flag = 1;
+              
             }
-
+        
             if(left_flag == 1 && right_flag == 1){
               resetencode();
               mySerial.println("done!");
@@ -308,20 +313,20 @@ void dc_backward(){
 
 }
 
-void dc_left(){
+void dc_right(){
   analogWrite(motorpin1, motor_speed);
   analogWrite(motorpin2, 0);
   analogWrite(motorpin3, 0);
   analogWrite(motorpin4, motor_speed);
-  Serial.println("left");
+  Serial.println("right");
 }
 
-void dc_right(){
+void dc_left(){
   analogWrite(motorpin1, 0);
   analogWrite(motorpin2, motor_speed);
   analogWrite(motorpin3, motor_speed);
   analogWrite(motorpin4, 0);
-  Serial.println("right");
+  Serial.println("left");
 }
 
 
