@@ -270,7 +270,7 @@ void loop() {
             }
         }
     }
-    else if(SystemAllFlag == 99){
+    else if(SystemAllFlag == 99){ // 시스템 초기화하는 코드(uno, 서보모터보드에 리셋 코드 보내주는 단계)
         
     }
 }
