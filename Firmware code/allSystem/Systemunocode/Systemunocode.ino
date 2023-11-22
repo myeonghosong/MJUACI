@@ -16,6 +16,7 @@ int motor_speed = 100;
 float wheel_dia = 322; //102.44;
 float distance_per_pulse = wheel_dia / 360;
 float turn_factor = ((270*PI)/4)/distance_per_pulse;
+int checkflag = 0;
 
 const byte interruptPin1 = 2; //left
 const byte interruptPin2 = 3; //right
@@ -164,14 +165,17 @@ void setup()
             checkpoint = analogRead(A2);
             
           
-            if(checkpoint < 950){ // 체크포인트 흰색 나오면 멈춤
+            if((checkpoint < 950)&&(checkflag == 0)){ // 체크포인트 흰색 나오면 멈춤
               Serial.println("체크포인트 도달");
               
               left_stop();
               right_stop();
               left_flag = 1;
               right_flag = 1;
-              
+              checkflag = 1;
+            }
+            if(checkpoint >= 950){
+              checkflag = 0;
             }
         
             if(left_flag == 1 && right_flag == 1){
