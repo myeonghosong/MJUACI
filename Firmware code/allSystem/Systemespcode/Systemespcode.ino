@@ -48,6 +48,8 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
   }
   if(topic[17] == 'Y'){
     buffy = DATA;
+    buffy = 354 - buffy;
+    buffy *= 0.4347826087;
     ydata = buffy.toInt() + 20000;
   }
   if(topic[17] == 'X'){

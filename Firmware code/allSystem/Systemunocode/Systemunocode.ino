@@ -65,7 +65,7 @@ void setup()
   target_value = (target_temp - 50) * 20;
   Serial.print("target to : "); Serial.println(target_value);
   delay(10);
-  //step_move();
+  step_move();
 
   while(1){
   if(Serial.available()>0){
