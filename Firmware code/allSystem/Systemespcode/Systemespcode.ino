@@ -123,6 +123,18 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         SystemFlag = 0;
         Serial.println("RESET");
     }
+    else if(strcmp(DATA, "TEST_F") == 0){
+      Serial2.println(21000);
+    }
+    else if(strcmp(DATA, "TEST_B") == 0){
+      Serial2.println(24000);
+    }
+    else if(strcmp(DATA, "TEST_R") == 0){
+      Serial2.println(28888);
+    }
+    else if(strcmp(DATA, "TEST_L") == 0){
+      Serial2.println(27777);
+    }
   }
 }
 
