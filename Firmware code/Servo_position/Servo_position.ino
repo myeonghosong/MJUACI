@@ -79,6 +79,7 @@ float link4 = long_joint;
 float y_min = 60;
 int target = y_min;
 int temp = 60;
+int servo_flag = 0;
 
 const float DXL_PROTOCOL_VERSION = 2.0;
 
@@ -95,7 +96,6 @@ void setup() {
   dxl.ping(DXL_1);
   dxl.ping(DXL_2);
   dxl.ping(DXL_3);
-  //dxl.ping(DXL_4);
 
   dxl.torqueOff(DXL_1);
   dxl.setOperatingMode(DXL_1, OP_POSITION);
@@ -108,43 +108,16 @@ void setup() {
   dxl.torqueOff(DXL_3);
   dxl.setOperatingMode(DXL_3, OP_POSITION);
   dxl.torqueOn(DXL_3);
-  /*
-  dxl.torqueOff(DXL_4);
-  dxl.setOperatingMode(DXL_4, OP_POSITION);
-  dxl.torqueOn(DXL_4);
-  */
+
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_1, 0);
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_2, 0);
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_3, 0);
-  //dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_4, 30);
-  InverseKinematics(y_min);
+
+  moving_servo();
 }
 
 void set180(){
   dxl.setGoalPosition(254, 180.00, UNIT_DEGREE);
-}
-
-void InverseKinematics(float y_data){
-  float x = 0;
-  float y = y_data;
-  float cos_theta2 = (x*x+y*y-link1*link1-link2*link2)/(2*link1*link2);
-  float sin_theta2 = sqrt(1-cos_theta2*cos_theta2);
-
-  float theta1 = degrees(atan2(y,x)-atan2(link2*sin_theta2,link1+link2*cos_theta2))+90;
-  float theta2 = degrees(atan2(sin_theta2, cos_theta2))+180;
-  float theta3 = 540 - theta1 - theta2;
-
-  move(theta1, theta2, theta3);
-}
-
-void move(float t1, float t2, float t3){
-  float theta1 = t1+90;
-  float theta2 = t2;
-  float theta3 = t3;
-
-  dxl.setGoalPosition(DXL_1, theta1, UNIT_DEGREE);
-  dxl.setGoalPosition(DXL_2, theta2, UNIT_DEGREE);
-  dxl.setGoalPosition(DXL_3, theta3, UNIT_DEGREE);
 }
 
 void lotation_move(){
@@ -163,32 +136,71 @@ void lotation_move(){
   delay(1000);
 }
 
+void moving_servo(){
+  Serial.print("target : "); Serial.println(target);
+  Serial.print("temp : "); Serial.println(temp);  
+  if(target > temp){
+    Serial.print("Up count\n"); 
+    for(int a = temp ; a < target+1 ; a ++){
+      Serial.print(a); Serial.print(" "); 
+      InverseKinematics(a);
+    }
+    Serial.println(); Serial.println();
+  }
+  else{
+    Serial.print("Down count\n"); 
+    for(int a = temp ; a > target-1 ; a --){
+      Serial.print(a); Serial.print(" "); 
+      InverseKinematics(a);
+    }
+    Serial.println(); Serial.println();
+  }
+  temp = target;
+}
+
+void InverseKinematics(float y_data){
+  float x = 0;
+  float y = y_data;
+  float cos_theta2 = (x*x+y*y-link1*link1-link2*link2)/(2*link1*link2);
+  float sin_theta2 = sqrt(1-cos_theta2*cos_theta2);
+
+  float theta1 = degrees(atan2(y,x)-atan2(link2*sin_theta2,link1+link2*cos_theta2))+90;
+  float theta2 = degrees(atan2(sin_theta2, cos_theta2))+180;
+  float theta3 = 540 - theta1 - theta2;
+
+  if(servo_flag == 1) ;
+  if(servo_flag == 2) theta1 += 90;
+  if(servo_flag == 3) {
+    theta1 -= 90;
+    if(theta1 <= 90){
+      theta1 += 90;
+      theta2 -= 180;
+      theta3 = 540 - theta1 - theta2;
+    }
+  }
+  dxl.setGoalPosition(DXL_1, theta1, UNIT_DEGREE);
+  dxl.setGoalPosition(DXL_2, theta2, UNIT_DEGREE);
+  dxl.setGoalPosition(DXL_3, theta3, UNIT_DEGREE);
+}
+
 void loop() { 
   if(Serial2.available()){
     if(temp == 0) temp = 60;
     target = Serial2.parseInt();
-    if( target > 0){
-      Serial.read();
-      Serial.print("target : "); Serial.println(target);
-      Serial.print("temp : "); Serial.println(temp); 
-    
-      if(target > temp){
-        Serial.print("Up count\n"); 
-        for(int a = temp ; a < target+1 ; a ++){
-          Serial.print(a); Serial.print(" "); 
-          InverseKinematics(a);
-        }
-        Serial.println(); Serial.println();
-      }
-      else{
-        Serial.print("Down count\n"); 
-        for(int a = temp ; a > target-1 ; a --){
-          Serial.print(a); Serial.print(" "); 
-          InverseKinematics(a);
-        }
-        Serial.println(); Serial.println();
-      }
-      temp = target;
+    if( target > 0 && target < 1000){ // 로봇팔 중앙으로
+      servo_flag = 1;
+      target -= 1000;
+      moving_servo();
+    }
+    else if(target > 1000 && target < 2000){ // 로봇 팔 왼쪽으로
+      servo_flag = 2;
+      target -= 2000;
+      moving_servo();
+    }
+    else if(target > 2000 && target < 3000){ // 로봇 팔 오른쪽으로
+      servo_flag = 3;
+      target -= 3000;
+      moving_servo();
     }
   }
 }

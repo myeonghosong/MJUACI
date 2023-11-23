@@ -1,6 +1,6 @@
 STL로 Solid Edge 변환
-날짜: 수요일,11월 22,2023 09:38오후
-원본 파일:C:\Users\민경현\Desktop\Univ\23_2\융합캡스톤디자인2\github\CD4project\CAD Files\연결부_메꾸기브라켓.par
+날짜: 목요일,11월 23,2023 02:09오전
+원본 파일:C:\Users\민경현\Desktop\Univ\23_2\융합캡스톤디자인2\github\CD4project\CAD Files\프로파일 보강대 80mm.par
 원본 시스템: SOLID EDGE
 
 하드웨어:
@@ -27,4 +27,4 @@ structureOption: Monolithic
 2/2단계 Parasolid를 외부 데이터 유형으로 변환하는 중...
 생성된 STL 파일 수: 1
 변환 작업을 완료했습니다.
-변환에 필요한 시간:00 : 00 : 00
+변환에 필요한 시간:00 : 00 : 01

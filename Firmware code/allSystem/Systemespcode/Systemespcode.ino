@@ -48,9 +48,16 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
   }
   if(topic[17] == 'Y'){
     buffy = DATA;
-    buffy = 354 - buffy;
-    buffy *= 0.4347826087;
-    ydata = buffy.toInt() + 20000;
+    int b = 0;
+    b = buffy.toInt();
+    Serial.print("Y axis data input :"); Serial.println(b);
+    if(b > 354){
+      b = abs(354-b);
+      b *= 0.4347826087;
+      b += 20000;
+      Serial.print("Go front : "); Serial.println(b);
+      ydata = b;
+    }
   }
   if(topic[17] == 'X'){
     buffx = DATA;
