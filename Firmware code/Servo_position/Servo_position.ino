@@ -77,9 +77,12 @@ float link2 = long_joint + servo;
 float link3 = short_joint + short_servo;
 float link4 = long_joint;
 float y_min = 60;
-int target = y_min;
+//int target = y_min;
 int temp = 60;
 int servo_flag = 0;
+int temp_x = 0;
+int temp_y = 0;
+int rotate_flag = 0;
 
 const float DXL_PROTOCOL_VERSION = 2.0;
 
@@ -113,17 +116,18 @@ void setup() {
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_2, 0);
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_3, 0);
 
-  moving_servo();
+  moving_servo(60);
 }
 
-void moving_servo(){
+void moving_servo(int data){
+  int target = data;
   Serial.print("target : "); Serial.println(target);
   Serial.print("temp : "); Serial.println(temp);  
   if(target > temp){
     Serial.print("Up count\n"); 
     for(int a = temp ; a < target+1 ; a ++){
       Serial.print(a); Serial.print(" "); 
-      InverseKinematics(a);
+      InverseKinematics(0,a);
     }
     Serial.println(); Serial.println();
   }
@@ -131,15 +135,15 @@ void moving_servo(){
     Serial.print("Down count\n"); 
     for(int a = temp ; a > target-1 ; a --){
       Serial.print(a); Serial.print(" "); 
-      InverseKinematics(a);
+      InverseKinematics(0,a);
     }
     Serial.println(); Serial.println();
   }
   temp = target;
 }
 
-void InverseKinematics(float y_data){
-  float x = 0;
+void InverseKinematics(float x_data, float y_data){
+  float x = x_data;
   float y = y_data;
   float cos_theta2 = (x*x+y*y-link1*link1-link2*link2)/(2*link1*link2);
   float sin_theta2 = sqrt(1-cos_theta2*cos_theta2);
@@ -153,9 +157,9 @@ void InverseKinematics(float y_data){
   if(servo_flag == 3) {
     theta1 -= 90;
     if(theta1 <= 90){
-      theta1 += 90;
-      theta2 -= 180;
-      theta3 = 540 - theta1 - theta2;
+      theta1 = 180 - theta1;
+      theta2 = 360 - theta2;
+      theta3 = 450 - theta1 - theta2;
     }
   }
   dxl.setGoalPosition(DXL_1, theta1, UNIT_DEGREE);
@@ -164,24 +168,52 @@ void InverseKinematics(float y_data){
 }
 
 void loop() { 
-  if(Serial2.available()){
-    target = Serial2.parseInt();
+  if(mySerial.available()){
+    int target = mySerial.parseInt();
     if( target > 0 && target < 1000){ // 로봇팔 중앙으로
-      Serial.println("Flag = 1");
+      if(rotate_flag == 2){  // 왼쪽에서 중앙으로
+        moving_servo(60);    // 왼쪽에서 끝까지 당김
+      }
+      if(rotate_flag == 3){  // 오른쪽에서 중앙으로
+        moving_servo(60);    // 오른쪽에서 끝까지 당김
+        delay(100);
+        servo_flag = 2;
+        moving_servo(60);    // 왼쪽으로 회전
+        delay(100);
+        servo_flag = 1;
+        moving_servo(60);    // 중앙으로 회전 / 그런데 딜레이가 짧아서 왼쪽으로 회전하다가 중간에 중앙으로 회전함.
+      }                      // 원래 오른쪽에서 중앙으로 바로 회전하는데 그러면 모터 속도차이 때문에 2번 모터가 바닥을 때리는데, 왠지 모르겠는데 오른쪽에서 왼쪽으로 돌리면 바닥을 안때리고 
       servo_flag = 1;
-      target -= 1000;
       Serial.print("target : "); Serial.println(target);
-      moving_servo();
+      if(rotate_flag == 2 || rotate_flag == 3){
+        moving_servo(60);
+      }
+      moving_servo(target);
+      rotate_flag = 1;
     }
     else if(target > 1000 && target < 2000){ // 로봇 팔 왼쪽으로
+      if(rotate_flag == 1 || rotate_flag == 3){
+        moving_servo(60);
+      }
       servo_flag = 2;
-      target -= 2000;
-      moving_servo();
+      target -= 1000;
+      if(rotate_flag == 1 || rotate_flag == 3){
+        moving_servo(60);
+      }
+      moving_servo(target);
+      rotate_flag = 2;
     }
     else if(target > 2000 && target < 3000){ // 로봇 팔 오른쪽으로
+      if(rotate_flag == 1 || rotate_flag == 2){
+        moving_servo(60);
+      }
       servo_flag = 3;
-      target -= 3000;
-      moving_servo();
+      target -= 2000;
+      if(rotate_flag == 1 || rotate_flag == 2){
+        moving_servo(60);
+      }
+      moving_servo(target);
+      rotate_flag = 3;
     }
   }
 }

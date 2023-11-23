@@ -78,7 +78,8 @@ float link3 = short_joint + short_servo;
 float link4 = long_joint;
 float y_min = 60;
 int target = y_min;
-int temp = 60;
+float temp_y = 60;
+float temp_x = 0;
 int servo_flag = 0;
 
 const float DXL_PROTOCOL_VERSION = 2.0;
@@ -87,6 +88,279 @@ Dynamixel2Arduino dxl(DXL_SERIAL, DXL_DIR_PIN);
 
 //This namespace is required to use Control table item names
 using namespace ControlTableItem;
+
+void Inverse_Kinematics(float x_data, float y_data){
+  float x = x_data;
+  float y = y_data;
+  float cos_theta2 = (x*x+y*y-link1*link1-link2*link2)/(2*link1*link2);
+  float sin_theta2 = sqrt(1-cos_theta2*cos_theta2);
+
+  float theta1 = degrees(atan2(y,x)-atan2(link2*sin_theta2,link1+link2*cos_theta2))+90;
+  float theta2 = degrees(atan2(sin_theta2, cos_theta2))+180;
+  float theta3 = 0;
+  int angle_flag = 1;
+
+  if(theta1 >= 0 && theta1 < 90 && angle_flag == 1){
+    theta1 = 180 - theta1;
+    theta2 = 360 - theta2;
+    theta3 = 450 - theta1 - theta2;
+    angle_flag = 0;
+  }
+
+  if(theta1 >= 90 && theta1 < 180 && angle_flag == 1){
+    if(x_data == 0){ // 정면으로 뻗기
+      theta3 = 540 - theta1 - theta2;
+    }
+    else if(y_data == 0){ // 오른쪽으로 뻗기
+      theta3 = 450 - theta1 - theta2;
+    }
+    angle_flag = 0;
+  }
+  else if(theta1 >= 180 && theta1 < 270 && angle_flag == 1){
+    if(x_data == 0){ // 정면으로 뻗기
+      theta3 = 540 + theta1 - theta2;
+    }
+    else if(y_data == 0){ // 왼쪽으로 뻗기
+      theta3 = 675 - theta1 - theta2;
+    }
+    angle_flag = 0;
+  }
+
+  else if(theta1 >= 270 && theta1 < 360 && angle_flag == 1){
+    theta1 = 540 - theta1;
+    theta2 = 360 - theta2;
+    theta3 = 675 - theta1 - theta2;
+    angle_flag = 0;
+  }
+
+  dxl.setGoalPosition(DXL_1, theta1, UNIT_DEGREE);
+  dxl.setGoalPosition(DXL_2, theta2, UNIT_DEGREE);
+  dxl.setGoalPosition(DXL_3, theta3, UNIT_DEGREE);
+}
+
+void f_to_f(float x_data, float y_data){
+  Serial.println("f_to_f");
+  delay(10);
+  float x = x_data;
+  float y = y_data;
+  if(y > temp_y){  // 팔 앞으로 뻗기  x : 0 / y : +
+    for(int count = temp_y ; count < y + 1 ; count ++){
+      Serial.print("x : "); Serial.print("0"); Serial.print(" y : "); Serial.println(count);
+      int target_x = 0;
+      int target_y = count;
+      Inverse_Kinematics(target_x, target_y);
+    }
+  }
+  else if(y < temp_y){  // 팔 뒤로 당기기 x : 0 / y : -
+    for(int count = temp_y ; count > y - 1 ; count --){
+      Serial.print("x : "); Serial.print("0"); Serial.print(" y : "); Serial.println(count);
+      int target_x = 0;
+      int target_y = count;
+      Inverse_Kinematics(target_x, target_y);
+    }
+  }
+  temp_x = x;
+  temp_y = y;
+}
+
+void l_to_f(float x_data, float y_data){  // x : 음수 -> 0 / y : 0 -> 목표
+  Serial.println("l_to_f");
+  delay(10);
+  float x = x_data;
+  float y = y_data;
+  float count_x = temp_x;
+  float count_y = 0;
+  while(count_x < 0 && count_y < y){ // x가 음수이고 y가 목표값보다 작을 동안
+    Inverse_Kinematics(count_x, count_y);
+    Serial.print("x : "); Serial.print(count_x); Serial.print(" y : "); Serial.println(count_y);
+    if(count_x < 0) count_x ++;
+    if(count_y < y) count_y ++;
+  }
+  temp_x = x;
+  temp_y = y;
+}
+
+void r_to_f(float x_data, float y_data){  // x : 양수 -> 0 / y : 0 -> 목표
+  Serial.println("r_to_f");
+  delay(10);
+  float x = x_data;
+  float y = y_data;
+  float count_x = temp_x;
+  float count_y = 0;
+  while(count_x > 0 && count_y < y){ // x가 양수이고 y가 목표값보다 작을 동안
+    Inverse_Kinematics(count_x, count_y);
+    Serial.print("x : "); Serial.print(count_x); Serial.print(" y : "); Serial.println(count_y);
+    if(count_x > 0) count_x --;
+    if(count_y < y) count_y ++;
+  }
+  temp_x = x;
+  temp_y = y;
+}
+
+void l_to_l(float x_data, float y_data){
+  Serial.println("l_to_l");
+  delay(10);
+  float x = x_data;
+  float y = y_data;
+  if(y > temp_y){  // 팔 앞으로 뻗기  x : - / y : 0
+    for(int count = temp_x ; count > x - 1 ; count --){ //ex) x = 0 to x = -100
+      Serial.print("x : "); Serial.print(count); Serial.print(" y : "); Serial.println(y);
+      int target_x = count;
+      int target_y = y;
+      Inverse_Kinematics(target_x, target_y);
+    }
+  }
+  else if(y < temp_y){  // 팔 뒤로 당기기 x : + / y : 0
+    for(int count = temp_x ; count < x + 1 ; count ++){ // ex) x = -100 to x = 0
+      Serial.print("x : "); Serial.print(count); Serial.print(" y : "); Serial.println(y);
+      int target_x = count;
+      int target_y = y;
+      Inverse_Kinematics(target_x, target_y);
+    }
+  }
+  temp_x = x;
+  temp_y = y;
+}
+
+void f_to_l(float x_data, float y_data){ // x : 0 -> 음수 목표 / y : 양수 -> 0
+  Serial.println("f_to_l");
+  delay(10);
+  float x = x_data;
+  float y = y_data;
+  float count_x = 0;
+  float count_y = temp_y;
+  while(count_x > x && count_y > 0){ // x가 목표값보다 크고 y가 양수인 동안  /  ex) x = 0 to -100 y = 100 to 0
+    Inverse_Kinematics(count_x, count_y);
+    Serial.print("x : "); Serial.print(count_x); Serial.print(" y : "); Serial.println(count_y);
+    if(count_x > x) count_x --;
+    if(count_y > 0) count_y --;
+  }
+  temp_x = x;
+  temp_y = y;  
+}
+
+void r_to_r(float x_data, float y_data){
+  Serial.println("r_to_r");
+  delay(10);
+  float x = x_data;
+  float y = y_data;
+  if(y > temp_y){  // 팔 앞으로 뻗기  x : + / y : 0
+    for(int count = temp_x ; count < x + 1 ; count ++){ // ex) x = 0 to x = 100
+      Serial.print("x : "); Serial.print(count); Serial.print(" y : "); Serial.println(y);
+      int target_x = count;
+      int target_y = y;
+      Inverse_Kinematics(target_x, target_y);
+    }
+  }
+  else if(y < temp_y){  // 팔 뒤로 당기기 x : - / y : 0
+    for(int count = temp_x ; count > x - 1 ; count --){ // ex) x = 100 to x = 0
+      Serial.print("x : "); Serial.print(count); Serial.print(" y : "); Serial.println(y);
+      int target_x = count;
+      int target_y = y;
+      Inverse_Kinematics(target_x, target_y);
+    }
+  }
+  temp_x = x;
+  temp_y = y;  
+}
+
+void f_to_r(float x_data, float y_data){ // x : 0 -> 양수 목표 / y : 양수 -> 0
+  Serial.println("f_to_r");
+  delay(10);
+  float x = x_data;
+  float y = y_data;
+  float count_x = 0;
+  float count_y = temp_y;
+  Serial.print("목표 : "); Serial.print(x); Serial.print(" / "); Serial.print(y); Serial.print("현재 : "); Serial.print(count_x); Serial.print(" / "); Serial.println(count_y);
+  while(count_x < x && count_y > 0){ // x가 목표값보다 작고 y가 양수인 동안  /  ex) x = 0 to 100 y = 100 to 0
+    Inverse_Kinematics(count_x, count_y);
+    Serial.print("x : "); Serial.print(count_x); Serial.print(" y : "); Serial.println(count_y);
+    if(count_x < x) count_x ++;
+    if(count_y > 0) count_y --;
+  }
+  temp_x = x;
+  temp_y = y;    
+}
+
+void moving_front(float x_data, float y_data){
+  float x = x_data;
+  float y = y_data;
+  if(temp_x == 0 && x == 0){  // 팔 뻗기
+    Serial.println("move front");
+    delay(10);
+    f_to_f(0, y);
+  }
+  else if(temp_x < 0 && x == 0){ // 팔 왼쪽에서 중앙으로 x : - / y : + 
+    Serial.println("move left to front");
+    delay(10);
+    l_to_f(0, 60);
+    delay(10);
+    f_to_f(0, y);
+  }
+  else if(temp_x > 0 && x == 0){ // 팔 오른쪽에서 중앙으로  x : - / y : +
+    Serial.println("move right to front");
+    delay(10);
+    r_to_f(0, 60);
+    delay(10);
+    f_to_f(0, y);
+  }
+}
+
+void moving_left(float x_data, float y_data){
+  float x = x_data;
+  float y = y_data;
+  if(y == 0 && temp_y == 0){ // 팔이 왼쪽에 있을 경우
+    Serial.println("move left");
+    delay(10);
+    l_to_l(x, 0);     // 왼쪽 -> 뻗기
+  }
+  if(y == 0 && temp_y > 0){ 
+    if(temp_x == 0){ // 팔이 중앙일 경우 x : + / y : -
+      Serial.println("move front to left");
+      delay(10);
+      f_to_l(60, 0);  // 중앙 -> 왼쪽
+      delay(10);
+      l_to_l(x, 0);   // 왼쪽 -> 뻗기
+    }
+    if(temp_x > 0){ // 팔이 오른쪽에 있을 경우
+      Serial.println("move right to left");
+      delay(10);
+      r_to_f(0, 60);  // 오른쪽 -> 중앙
+      delay(10);
+      f_to_l(60, 0);  // 중앙 -> 왼쪽
+      delay(10);
+      l_to_l(x, 0);   // 왼쪽 -> 뻗기
+    }
+  }
+}
+
+void moving_right(float x_data, float y_data){
+  float x = x_data;
+  float y = y_data;
+  if(y == 0 && temp_y == 0){ // 팔이 오른쪽에 있을 경우
+    Serial.println("move right");
+    delay(10);
+    r_to_r(x, 0);    // 오른쪽 -> 뻗기
+  }
+  if(y == 0 && temp_y > 0){ // 팔이 중앙일 경우
+    if(temp_x == 0){
+      Serial.println("move front to right");
+      delay(10);
+      f_to_r(60, 0); // 중앙 -> 오른쪽
+      delay(10);
+      r_to_r(x, 0);  // 오른쪽 -> 뻗기
+    }
+    if(temp_x < 0){  // 팔이 왼쪽에 있을 경우
+      Serial.println("move left to front");
+      delay(10);
+      l_to_f(0,60);  // 왼쪽 -> 중앙
+      delay(10);
+      f_to_r(60, 0); // 중앙 -> 오른쪽
+      delay(10);
+      r_to_r(x, 0);  // 오른쪽 -> 뻗기
+    }
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -113,74 +387,30 @@ void setup() {
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_2, 0);
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_3, 0);
 
-  moving_servo();
-}
-
-void moving_servo(){
-  Serial.print("target : "); Serial.println(target);
-  Serial.print("temp : "); Serial.println(temp);  
-  if(target > temp){
-    Serial.print("Up count\n"); 
-    for(int a = temp ; a < target+1 ; a ++){
-      Serial.print(a); Serial.print(" "); 
-      InverseKinematics(a);
-    }
-    Serial.println(); Serial.println();
-  }
-  else{
-    Serial.print("Down count\n"); 
-    for(int a = temp ; a > target-1 ; a --){
-      Serial.print(a); Serial.print(" "); 
-      InverseKinematics(a);
-    }
-    Serial.println(); Serial.println();
-  }
-  temp = target;
-}
-d
-void InverseKinematics(float y_data){
-  float x = 0;
-  float y = y_data;
-  float cos_theta2 = (x*x+y*y-link1*link1-link2*link2)/(2*link1*link2);
-  float sin_theta2 = sqrt(1-cos_theta2*cos_theta2);
-
-  float theta1 = degrees(atan2(y,x)-atan2(link2*sin_theta2,link1+link2*cos_theta2))+90;
-  float theta2 = degrees(atan2(sin_theta2, cos_theta2))+180;
-  float theta3 = 540 - theta1 - theta2;
-
-  if(servo_flag == 1) ;
-  if(servo_flag == 2) theta1 += 90;
-  if(servo_flag == 3) {
-    theta1 -= 90;
-    if(theta1 <= 90){
-      theta1 += 90;
-      theta2 -= 180;
-      theta3 = 540 - theta1 - theta2 - 90;
-    }
-  }
-  dxl.setGoalPosition(DXL_1, theta1, UNIT_DEGREE);
-  dxl.setGoalPosition(DXL_2, theta2, UNIT_DEGREE);
-  dxl.setGoalPosition(DXL_3, theta3, UNIT_DEGREE);
+  moving_front(0,60);
 }
 
 void loop() { 
   if(Serial.available()){
     target = Serial.parseInt();
     if( target > 0 && target < 1000){ // 로봇팔 중앙으로
-      Serial.println("Flag = 1");
-      servo_flag = 1;
-      Serial.print("target : "); Serial.println(target);
-      moving_servo();
+      Serial.print("Front / target : "); Serial.println(target);
+      delay(100);
+      Inverse_Kinematics(0, target);
     }
     else if(target > 1000 && target < 2000){ // 로봇 팔 왼쪽으로
-      servo_flag = 2;
       target -= 1000;
-      moving_servo();
+      target *= -1;
+      Serial.print("Left / target : "); Serial.println(target);
+      delay(100);
+      Inverse_Kinematics(target, 0);
     }
     else if(target > 2000 && target < 3000){ // 로봇 팔 오른쪽으로
-      servo_flag = 3;
       target -= 2000;
-      moving_servo();
+      Serial.print("Right / target : "); Serial.println(target);
+      delay(100);
+      Inverse_Kinematics(target, 0);
+      
     }
   }
 }
