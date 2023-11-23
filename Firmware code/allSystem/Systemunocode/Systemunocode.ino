@@ -60,12 +60,12 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(interruptPin1),intfunc1,RISING);
   attachInterrupt(digitalPinToInterrupt(interruptPin2),intfunc2,RISING);
   delay(100);
-  target_mm = 200;
-  target_temp = target_mm;
-  target_value = (target_temp - 50) * 20;
-  Serial.print("target to : "); Serial.println(target_value);
-  delay(10);
-  step_move();
+  //target_mm = 200;
+  //target_temp = target_mm;
+  //target_value = (target_temp - 50) * 20;
+  //Serial.print("target to : "); Serial.println(target_value);
+  //delay(10);
+  //step_move();
 
   while(1){
   if(Serial.available()>0){
@@ -77,8 +77,8 @@ void setup()
     target_pix = mySerial.parseInt();
     Serial.print("Data income : "); Serial.println(target_pix);
     if(target_pix != 0){
-      if(target_pix < 10000){ //STEP 입력값은 0 ~ 9999 / 성공시 9999
-        target_check1 = target_pix;
+      if((target_pix>=30000)&&(target_pix < 40000)){ //STEP 입력값은 30000 ~ 39999 / 성공시 9999
+        target_check1 = target_pix - 30000;
         target_pix = 240 - target_pix;
         target_mm = target_pix * 0.33;
         Serial.print("check : "); Serial.print(target_check1);
@@ -103,8 +103,19 @@ void setup()
           target_value = (target_temp - 50) * 20;
           step_move();
           flagz = 0;
-        } 
+        }
       }
+      else if(target_pix >= 10000 && target_pix < 11000){
+        motor_speed = 60;
+        target_mm = target_pix - 10000;
+        target_value = (target_mm - 50) * 20;
+        step_move();
+      }
+      
+      else if(target_pix == 13000){
+        motor_speed = 100;
+      }
+
       else if(target_pix >= 20000){ //DC 입력값은 전진 20000 ~ 22999 / 후진 23000 ~ 24999 / 좌회전 27777 / 우회전 28888
         dc_target = target_pix - 20000; // 전진 0 ~ 2999 / 후진 3000 ~ 4999 / 좌회전 7777 / 우회전 8888
         if (dc_target != 0){
@@ -173,6 +184,7 @@ void setup()
               left_flag = 1;
               right_flag = 1;
               checkflag = 1;
+              mySerial.println(checkflag);
             }
             if(checkpoint >= 950){
               checkflag = 0;
