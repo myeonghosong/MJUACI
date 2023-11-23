@@ -137,7 +137,7 @@ void moving_servo(){
   }
   temp = target;
 }
-d
+
 void InverseKinematics(float y_data){
   float x = 0;
   float y = y_data;
