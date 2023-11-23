@@ -51,7 +51,6 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
   if(topic[17] == 'Y'){
     int B;
     buffy = DATA;
-  //<<<<<<< HEAD
     int b = 0;
     b = buffy.toInt();
     Serial.print("Y axis data input :"); Serial.println(b);
@@ -62,7 +61,6 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
       Serial.print("Go front : "); Serial.println(b);
       ydata = b;
     }
-  //=======
     B = buffy.toInt();
     B = 354 - B;
     Serial.print("Y data : ");
@@ -76,11 +74,10 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
     }
     Serial.println(ydata);
     Serial2.println(ydata);
-  //>>>>>>> 938744aac6d419de2c3c80f3fa7e759370eae655
   }
-  if(topic[17] == 'X'){
-    buffx = DATA;
-    xdata = buffx.toInt();
+  if(topic[17] == 'X'){           // 서보 중앙   : 60 ~ 170
+    buffx = DATA;                 // 서보 왼쪽   : 1060 ~ 1170
+    xdata = buffx.toInt();        // 서보 오른쪽 : 2060 ~ 2170
     Serial1.println(xdata);
   }
 
@@ -99,7 +96,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         SystemAllFlag = 2;
         current = 0;
         Serial.println("FindCARNUM");
-        Serial2.println(10200);
+        Serial2.println(10200); // 스텝 높이 200mm
     }
     else if(strcmp(DATA, "FindConnector")==0){//커넥터 찾아서 잡는 단계
         SystemAllFlag = 3;
