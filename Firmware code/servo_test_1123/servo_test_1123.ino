@@ -137,7 +137,7 @@ void moving_servo(){
   }
   temp = target;
 }
-
+d
 void InverseKinematics(float y_data){
   float x = 0;
   float y = y_data;
@@ -155,7 +155,7 @@ void InverseKinematics(float y_data){
     if(theta1 <= 90){
       theta1 += 90;
       theta2 -= 180;
-      theta3 = 540 - theta1 - theta2;
+      theta3 = 540 - theta1 - theta2 - 90;
     }
   }
   dxl.setGoalPosition(DXL_1, theta1, UNIT_DEGREE);
@@ -164,23 +164,22 @@ void InverseKinematics(float y_data){
 }
 
 void loop() { 
-  if(Serial2.available()){
-    target = Serial2.parseInt();
+  if(Serial.available()){
+    target = Serial.parseInt();
     if( target > 0 && target < 1000){ // 로봇팔 중앙으로
       Serial.println("Flag = 1");
       servo_flag = 1;
-      target -= 1000;
       Serial.print("target : "); Serial.println(target);
       moving_servo();
     }
     else if(target > 1000 && target < 2000){ // 로봇 팔 왼쪽으로
       servo_flag = 2;
-      target -= 2000;
+      target -= 1000;
       moving_servo();
     }
     else if(target > 2000 && target < 3000){ // 로봇 팔 오른쪽으로
       servo_flag = 3;
-      target -= 3000;
+      target -= 2000;
       moving_servo();
     }
   }

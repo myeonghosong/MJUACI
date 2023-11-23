@@ -51,7 +51,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
   if(topic[17] == 'Y'){
     int B;
     buffy = DATA;
-<<<<<<< HEAD
+  //<<<<<<< HEAD
     int b = 0;
     b = buffy.toInt();
     Serial.print("Y axis data input :"); Serial.println(b);
@@ -62,7 +62,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
       Serial.print("Go front : "); Serial.println(b);
       ydata = b;
     }
-=======
+  //=======
     B = buffy.toInt();
     B = 354 - B;
     Serial.print("Y data : ");
@@ -76,7 +76,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
     }
     Serial.println(ydata);
     Serial2.println(ydata);
->>>>>>> 938744aac6d419de2c3c80f3fa7e759370eae655
+  //>>>>>>> 938744aac6d419de2c3c80f3fa7e759370eae655
   }
   if(topic[17] == 'X'){
     buffx = DATA;
