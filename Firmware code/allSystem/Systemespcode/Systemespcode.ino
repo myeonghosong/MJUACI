@@ -3,6 +3,7 @@
 #include <PubSubClient.h>
 #include <Wire.h>
 
+int current = 0;
 int SystemAllFlag =0;
 int SystemDCmove = 0;
 int SystemFlag = 99;
@@ -45,78 +46,116 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
   if(topic[17] == 'Z') {
     buffz = DATA;
     zdata = buffz.toInt();
+    Serial2.println(zdata);
   }
   if(topic[17] == 'Y'){
+    int B;
     buffy = DATA;
-    buffy = 354 - buffy;
-    buffy *= 0.4347826087;
-    ydata = buffy.toInt() + 20000;
+    B = buffy.toInt();
+    B = 354 - B;
+    Serial.print("Y data : ");
+    Serial.println(B);
+    if(B>0){
+      ydata = (B*0.4347826087) + 23000;
+    }
+    else if(B<0){
+      B=abs(B);
+      ydata = (B*0.4347826087) + 20000;
+    }
+    Serial.println(ydata);
+    Serial2.println(ydata);
   }
   if(topic[17] == 'X'){
     buffx = DATA;
     xdata = buffx.toInt();
+    Serial1.println(xdata);
   }
 
   if (strcmp(topic, "MJU/CD4/CHARGING/CAR") == 0) {
     
     if (strcmp(DATA, "IN") == 0) { //차량 진입->해당위치로 이동 단계
+        
         SystemAllFlag = 1;
-        SystemDCmove = 22900; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        SystemDCmove = 21500; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
         SystemFlag = 0;
+        current = 0;
         Serial.println("IN");
     }
     else if(strcmp(DATA, "FindCARNUM")==0){//번호판 인식단계
+    
         SystemAllFlag = 2;
+        current = 0;
         Serial.println("FindCARNUM");
+        Serial2.println(10200);
     }
     else if(strcmp(DATA, "FindConnector")==0){//커넥터 찾아서 잡는 단계
         SystemAllFlag = 3;
+        current = 0;
         Serial.println("FindConnector");
+        Serial2.println(10100); //모터스피드 60
     }
     else if(strcmp(DATA, "GoToPort")==0){//차량 충전구로 이동 단계
+        Serial2.println(13000); //모터스피드100
         SystemAllFlag = 4;
-        SystemDCmove = 20400; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        current = 0;
+        SystemDCmove = 23700; 
         SystemFlag = 0;
         Serial.println("GoToPort");
+        
     }
     else if(strcmp(DATA, "FindPort")==0){//충전구 탐색 및 삽입 단계
         SystemAllFlag = 5;
+        current = 0;
         Serial.println("FindPort");
+        Serial2.println(10200);
     }
     else if(strcmp(DATA, "Success")==0){//충전연결 성공, 커넥터 꽂은채로 로봇팔 회수 단계
+        Serial2.println(13000); //모터스피드100
         SystemAllFlag = 6;
+        current = 0;
         Serial.println("Success");
     }
     else if(strcmp(DATA, "BackForWaiting")==0){//로봇 원래자리로 돌아가는 단계
+        Serial2.println(13000); //모터스피드100
         SystemAllFlag = 7;
-        SystemDCmove = 23400; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        current = 0;
+        SystemDCmove = 23600;
         SystemFlag = 0;
         Serial.println("BackForWaiting");
     }
   
     else if(strcmp(DATA, "WaitingCharge")==0){//충전완료까지 대기하는 단계
         SystemAllFlag = 8;
+        current = 0;
         Serial.println("WaitingCharge");
     }
     else if(strcmp(DATA, "StopCharging")==0){//충전정지신호 받고 로봇 충전구로 이동하는 단계
+        Serial2.println(13000); //모터스피드100
         SystemAllFlag = 9;
-        SystemDCmove = 20400; //커넥터 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        current = 0;
+        SystemDCmove = 21000; //커넥터 (여유있게 줘서 가다가 수발광에 멈추도록?)
         SystemFlag = 0;
         Serial.println("StopCharging");
     }
     else if(strcmp(DATA, "PullConnector")==0){//커넥터 찾아서 잡고 전자서 켜서 뽑는 단계
+        Serial2.println(10200);
         SystemAllFlag = 10;
+        current = 0;
         Serial.println("PullConnector");
     }
     else if(strcmp(DATA, "PutConnector")==0){//커넥터 돌려놓으면서 회수시스템 작동 단계
+        Serial2.println(13000); //모터스피드100
         SystemAllFlag = 11;
-        SystemDCmove = 23400; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        current = 0;
+        SystemDCmove = 23600; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
         SystemFlag = 0;
         Serial.println("PutConnector");
     }
     else if(strcmp(DATA, "CARINWaiting")==0){//원점으로 돌아가는 단계 끝나면 SystemAllFlag = 0으로 돌아가서 반복
+        Serial2.println(13000); //모터스피드100
         SystemAllFlag = 12;
-        SystemDCmove = 23400; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
+        current = 0;
+        SystemDCmove = 24500; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
         SystemFlag = 0;
         Serial.println("CARINWaiting");
     }
@@ -126,16 +165,19 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         Serial.println("RESET");
     }
     else if(strcmp(DATA, "TEST_F") == 0){
-      Serial2.println(21000);
+      Serial2.println(20300);
     }
     else if(strcmp(DATA, "TEST_B") == 0){
-      Serial2.println(24000);
+      Serial2.println(23300);
     }
     else if(strcmp(DATA, "TEST_R") == 0){
       Serial2.println(28888);
     }
     else if(strcmp(DATA, "TEST_L") == 0){
       Serial2.println(27777);
+    }
+    else if(strcmp(DATA, "Systemflag") == 0){
+      current += 1;
     }
   }
 }
@@ -157,31 +199,57 @@ void loop() {
   }
 
   if(Serial2.available()>0){ // 우노가 수발광신호 받으면 다음스텝넘어가도록 플레그 쏴줌.
-    int f = Serial2.parseInt();
-    if((f > 0)&&(f < 6)){
-      SystemFlag = f;
+    int i = Serial2.parseInt();
+    Serial.println(i);
+    Serial.print("값:");
+    Serial.println(current);
+    if(i == 1){
+      current += 1;
+      SystemFlag = current;
+    }
+    Serial.println(SystemFlag);
+  }
+    if(Serial1.available()>0){ // 서보가 다음스텝넘어가도록 플레그 쏴줌.
+    int i = Serial1.parseInt();
+    if(i == 0){
+      current += 1;
+      SystemFlag = current;
     }
   }
     
     if(SystemAllFlag == 1){ //차량 진입->해당충전기 커넥터 위치로 이동 단계
         if(SystemFlag == 0){
+            delay(300);
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
+            SystemDCmove = 20600;
+        }
+        else if(SystemFlag == 1){
+            delay(300);
+            Serial2.println(SystemDCmove);
+            SystemDCmove = 99;
         }
     }
     
     else if(SystemAllFlag == 4){ //차량 충전구로 이동 단계
         if(SystemFlag == 0){ //모서리까지 움직이기
+            delay(300);
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
-            SystemDCmove = 27777;
+            SystemDCmove = 28888;
         }
-        else if(SystemFlag == 1){// 코너 좌회전
+        else if(SystemFlag == 1){// 코너 우회전
+            delay(300);
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
-            SystemDCmove = 20400;
+            SystemDCmove = 20600;
         }
-        else if(SystemFlag == 2){ // 충전구까지 이동
+        else if(SystemFlag == 2 ){// 서보 반대로 돌리는단계 
+
+            
+        } 
+        else if(SystemFlag == 3){ // 충전구까지 이동
+            delay(300);
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
         }
@@ -193,12 +261,12 @@ void loop() {
         if(SystemFlag == 0){ //모서리까지 움직이기
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
-            SystemDCmove = 28888;
+            SystemDCmove = 27777;
         }
         else if(SystemFlag == 1){// 코너 우회전
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
-            SystemDCmove = 23400;
+            SystemDCmove = 23600;
         }
         else if(SystemFlag == 2){ // 커넥터위치
             Serial2.println(SystemDCmove);
@@ -214,17 +282,17 @@ void loop() {
         if(SystemFlag == 0){
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
-            SystemDCmove = 20400;
+            SystemDCmove = 20500;
         }
         else if(SystemFlag == 1){ //모서리까지 움직이기
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
-            SystemDCmove = 27777;
+            SystemDCmove = 28888;
         }
-        else if(SystemFlag == 2){// 코너 좌회전
+        else if(SystemFlag == 2){// 코너 우회전
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
-            SystemDCmove = 20400;
+            SystemDCmove = 20600;
         }
         else if(SystemFlag == 3){ // 충전구까지 이동
             Serial2.println(SystemDCmove);
@@ -235,12 +303,12 @@ void loop() {
         if(SystemFlag == 0){ //모서리까지 움직이기
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
-            SystemDCmove = 28888;
+            SystemDCmove = 27777;
         }
-        else if(SystemFlag == 1){// 코너 우회전
+        else if(SystemFlag == 1){// 코너 좌회전
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
-            SystemDCmove = 23400;
+            SystemDCmove = 20600;
         }
         else if(SystemFlag == 2){ // 커넥터까지 이동
             Serial2.println(SystemDCmove);
@@ -261,6 +329,7 @@ void loop() {
         if(millis() - lastMS > 2000){
             lastMS = millis();
             if(zdata <=500 && zdata >= 100 && flagz == 0){
+            zdata = zdata + 30000;
             Serial2.println(zdata); 
             Serial.print("z axis data : "); Serial.println(zdata);
             }
@@ -279,7 +348,7 @@ void loop() {
             }
             if(flagx == 0 && xdata > 50 && xdata < 1000){
             Serial.print("x axis data : "); Serial.println(xdata);
-            Serial1.println(xdata);
+            //Serial1.println(xdata);
             flagx = 1;
             }
         }
