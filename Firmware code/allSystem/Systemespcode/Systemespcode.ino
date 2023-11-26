@@ -31,6 +31,13 @@ int xdata = 0;
 int ydata = 0;
 int zdata = 0;
 
+
+//커넥터 높이, 충전구 높이
+int connector_step = 10070; // 커넥터 스텝높이
+int connector_servo = 2135; // 커넥터 서보깊이
+int port_step = 10250; // 충전구 스텝높이
+int port_servo = 1117;
+
 int flagz = 0;
 int flagy = 0;
 int flagx = 0;
@@ -84,10 +91,10 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
   }
 
   if (strcmp(topic, "MJU/CD4/CHARGING") == 0){
-    if(strcmp(str, "CHARGINGSTART")==0){
+    if(strcmp(DATA, "CHARGINGSTART")==0){
       ChargingStart = 1;
     }
-    else if(strcmp(str, "CHARGINGSTOP")==0){
+    else if(strcmp(DATA, "CHARGINGSTOP")==0){
       ChargingStart = 0;
       Serial2.println(13000); //모터스피드100
       SystemAllFlag = 9;
@@ -99,9 +106,10 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
   }
 
   if (strcmp(topic, "MJU/CD4/CHARGING/CAR") == 0) {
+    Serial.println(DATA);
     
     if (strcmp(DATA, "IN") == 0) { //차량 진입->해당위치로 이동 단계
-        
+        Serial2.println(13000); //모터스피드100
         SystemAllFlag = 1;
         SystemDCmove = 21500; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
         SystemFlag = 0;
@@ -114,16 +122,14 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         SystemFlag = 0;
         current = 0;
         Serial.println("FindCARNUM");
-        Serial2.println(10200); // 스텝 높이 200mm
+        
     }
     else if(strcmp(DATA, "FindConnector")==0){//커넥터 찾아서 잡는 단계
         SystemAllFlag = 3;
+        SystemFlag = 0;
         current = 0;
-        Serial.println("FindConnector");
-        Serial2.println(10100); //모터스피드 60
-        flagz = 0;
-        flagy = 0;
-        flagx = 0;
+        Serial.println("FindConnector22");
+        Serial2.println(connector_step); //모터스피드 60
     }
     else if(strcmp(DATA, "GoToPort")==0){//차량 충전구로 이동 단계
         Serial2.println(13000); //모터스피드100
@@ -163,6 +169,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         SystemAllFlag = 8;
         current = 0;
         Serial.println("WaitingCharge");
+        
     }
     else if(strcmp(DATA, "StopCharging")==0){//충전정지신호 받고 로봇 충전구로 이동하는 단계
         Serial2.println(13000); //모터스피드100
@@ -182,6 +189,8 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         flagx = 0;
     }
     else if(strcmp(DATA, "PutConnector")==0){//커넥터 뽑고 돌려놓으면서 회수시스템 작동 단계
+        Serial2.println(15000); //전자석 잡기
+        delay(300);
         Serial2.println(13000); //모터스피드100
         SystemAllFlag = 11;
         current = 0;
@@ -204,15 +213,23 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         Serial.println("RESET");
     }
     else if(strcmp(DATA, "TEST_F") == 0){
+      Serial2.println(13000);
+      delay(200);
       Serial2.println(20300);
     }
     else if(strcmp(DATA, "TEST_B") == 0){
+      Serial2.println(13000);
+      delay(200);
       Serial2.println(23300);
     }
     else if(strcmp(DATA, "TEST_R") == 0){
+      Serial2.println(13000);
+      delay(200);
       Serial2.println(28888);
     }
     else if(strcmp(DATA, "TEST_L") == 0){
+      Serial2.println(13000);
+      delay(200);
       Serial2.println(27777);
     }
     else if(strcmp(DATA, "Systemflag") == 0){
@@ -235,7 +252,12 @@ void loop() {
 
   if(Serial.available()>0){
     int v = Serial.parseInt();
-    Serial2.println(v);
+    if(v >10000){
+        Serial2.println(v);
+    }
+    else if(v <=10000){
+      Serial1.println(v);
+    }
   }
 
   if(Serial2.available()>0){ // 우노가 수발광신호 받으면 다음스텝넘어가도록 플레그 쏴줌.
@@ -271,6 +293,7 @@ void loop() {
             SystemFlag = 99;
             delay(1000);
             myMQTTClient.publish("MJU/CD4/CHARGING/CAR","FindCARNUM");
+            
         }
     }
     
@@ -278,13 +301,30 @@ void loop() {
       if(SystemFlag == 0){
         delay(300);
         Serial1.println(2060); //오른쪽 보기
+        delay(500);
+        Serial2.println(30200); // 스텝 높이 200mm
+        SystemFlag = 99;
+      }
+    }
+
+    else if(SystemAllFlag == 3){//커넥터 잡기
+      if(SystemFlag == 0){
+        Serial.println("connector");
+        delay(3000);
+        Serial1.println(connector_servo);
+        delay(2000);
+        Serial2.println(15000); //전자석 켜기
+        delay(500);
+        Serial2.println(10150);
+        delay(500);
+        Serial1.println(2060);
+        myMQTTClient.publish("MJU/CD4/CHARGING/CAR","GoToPort");
         SystemFlag = 99;
       }
     }
 
     else if(SystemAllFlag == 4){ //차량 충전구로 이동 단계
         if(SystemFlag == 0){ //커넥터 들기 모서리까지 움직이기
-            Serial2.println(10200);
             delay(300);
             Serial2.println(13000);
             delay(100);
@@ -295,30 +335,38 @@ void loop() {
             SystemFlag = 99;
         }
         else if(SystemFlag == 1){// 코너 우회전
+            Serial.print("Flag1 : ");
+            Serial.println(SystemFlag);
+
             delay(300);
             Serial2.println(SystemDCmove);
             delay(100);
             Serial1.println(1060);
+            SystemDCmove = 20700;
+            
             SystemFlag = 99;
-            SystemDCmove = 20600;
-            delay(1000);
-            SystemFlag = 2;
         }
-        else if(SystemFlag == 2){// 충전구까지 이동
-            delay(300);
-            Serial2.println(SystemDCmove);
+        else if(SystemFlag == 2){
+          delay(300);
+          Serial2.println(SystemDCmove);
+          Serial.print("Flag2 : ");
+            Serial.println(SystemFlag);
             SystemFlag = 99;
         }
         else if(SystemFlag == 3){
+            Serial.print("Flag3 : ");
+            Serial.println(SystemFlag);
             myMQTTClient.publish("MJU/CD4/CHARGING/CAR","FindPort");
         }
     }
     else if(SystemAllFlag == 6){ //충전연결 성공, 커넥터 꽂은채로 로봇팔 회수 단계
         if(ChargingStart == 1){
-          //전자석 놓고
+          delay(300);
+          Serial2.println(16000); //전자석 놓기
+          delay(100);
           Serial1.println(1060);
           delay(1000);
-          Serial2.println(10010);
+          Serial2.println(10100);
           myMQTTClient.publish("MJU/CD4/CHARGING/CAR","BackForWaiting");
         }
     }
@@ -335,21 +383,14 @@ void loop() {
             Serial1.println(60);
             delay(300);
             Serial2.println(SystemDCmove);
-            SystemFlag = 99;
-            SystemDCmove = 23600;
+            SystemDCmove = 23700;
+            
         }
-        else if(SystemFlag == 2){ // 커넥터위치
-            delay(300);
-            Serial2.println(SystemDCmove);
-            SystemFlag = 99;
-            SystemDCmove = 23600;
-        }
-        else if(SystemFlag == 3){ // 원점
-            delay(300);
+        else if(SystemFlag == 2){
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
         }
-        else if(SystemFlag == 4){
+        else if(SystemFlag == 3){
             myMQTTClient.publish("MJU/CD4/CHARGING/CAR","WaitingCharge");
         }
     }
@@ -358,27 +399,20 @@ void loop() {
             delay(300);
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
-            SystemDCmove = 20500;
-        }
-        else if(SystemFlag == 1){ //모서리까지 움직이기
-            delay(300);
-            Serial2.println(SystemDCmove);
-            SystemFlag = 99;
             SystemDCmove = 28888;
         }
-        else if(SystemFlag == 2){// 코너 우회전
+        else if(SystemFlag == 1){// 코너 우회전
             delay(300);
             Serial2.println(SystemDCmove);
-            SystemFlag = 99;
-            SystemDCmove = 20600;
-        }
-        else if(SystemFlag == 3){ // 충전구까지 이동
-            Serial1.println(1060);
+            SystemDCmove = 20700;
             delay(300);
+            Serial1.println(1060);  
+        }
+        else if(SystemFlag == 2){
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
         }
-        else if(SystemFlag == 4){
+        else if(SystemFlag == 3){
           myMQTTClient.publish("MJU/CD4/CHARGING/CAR","PullConnector");
         }
     }
@@ -391,24 +425,31 @@ void loop() {
             SystemDCmove = 27777;
         }
         else if(SystemFlag == 1){// 코너 좌회전
-            Serial1.println(2060);
             delay(200);
             Serial2.println(SystemDCmove);
+            delay(200);
+            Serial1.println(2060);
             SystemFlag = 99;
             SystemDCmove = 20600;
         }
-        else if(SystemFlag == 2){ // 커넥터까지 이동
+        else if(SystemFlag == 2){
             delay(300);
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
         }
         else if(SystemFlag == 3){
-            Serial1.println(2170);
+            delay(300);
+            SystemFlag = 99;
+            Serial1.println(connector_servo);
             delay(1500);
-            Serial2.println(10100);
-            delay(1000);
-            //전자석 놓기
+            Serial2.println(connector_step);
+            delay(4000);
+            Serial2.println(16000);//전자석 놓기
+            delay(300);
             Serial1.println(2060);
+            delay(1000);
+            Serial.println("서보 놓기 완료");
+            myMQTTClient.publish("MJU/CD4/CHARGING/CAR","CARINWaiting");
         }
 
     }
@@ -417,21 +458,19 @@ void loop() {
             delay(300);
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
+            delay(500);
             Serial1.println(60);
         }
-        else if(SystemFlag == 0){
+        else if(SystemFlag == 1){
+          delay(300);
           Serial2.println(SystemDCmove);
           SystemFlag = 99;
-
-        }
-        else if(SystemFlag == 0){
-          Serial2.println(SystemDCmove);
-          SystemFlag = 99;
-
+          delay(300);
+          Serial2.println(10050);
         }
     }
 
-    else if((SystemAllFlag == 3)||(SystemAllFlag == 5)||(SystemAllFlag ==10)){ // 커넥터 잡기 or 충전구 삽입
+    else if((SystemAllFlag == 5)||(SystemAllFlag ==10)){ // 커넥터 잡기 or 충전구 삽입
         if(millis() - lastMS > 2000){
             lastMS = millis();
             if(zdata <=500 && zdata >= 100 && flagz == 0){
@@ -440,6 +479,7 @@ void loop() {
             Serial.print("z axis data : "); Serial.println(zdata);
             }
             else if(zdata == 9999 && flagz == 0){
+            zdata = zdata + 30000;
             Serial2.println(zdata);
             Serial.print("z axis data : "); Serial.println(zdata);
             flagz = 1;
@@ -454,16 +494,9 @@ void loop() {
             }
             if(flagx == 0 && xdata > 50 && xdata < 1000){
             Serial.print("x axis data : "); Serial.println(xdata);
-              if(SystemAllFlag == 3){
-                xdata = xdata + 2000;
-                Serial1.println(xdata);
-                delay(1500);
-                myMQTTClient.publish("MJU/CD4/CHARGING/CAR","GoToPort");
-
-              }
-              else if(SystemAllFlag == 5){
+              if(SystemAllFlag == 5){
                 xdata = xdata + 1000;
-                Serial1.println(xdata);
+                Serial1.println(port_servo);
                 myMQTTClient.publish("MJU/CD4/CHARGING/CAR","Success");
                 myMQTTClient.publish("MJU/CD4/CHARGING","READY2");
               }

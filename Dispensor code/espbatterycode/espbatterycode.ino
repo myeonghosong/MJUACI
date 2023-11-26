@@ -8,6 +8,9 @@ WiFiClient myTCPClient;
 PubSubClient myMQTTClient;
 HardwareSerial dfSerial(2);
 
+int v = 0;
+int a = 0;
+
 char* yes ="y";
 char* no = "n";
 char s1;
@@ -19,23 +22,31 @@ void cbFunc(const char topic[],byte *data, unsigned int length){
   if (strcmp(topic, "MJU/CD4/CHARGING") == 0) {
     if (strcmp(str, "READY2") == 0) {
     change = 1;
-  }
+    }
     else if(strcmp(str, "FINISH")==0){
     change = 0;
-  }
+    }
     else if(strcmp(str, "CHARGINGSTART")==0){
     change = 2;
     Serial2.print(yes);
-  }
+    }
     else if(strcmp(str, "CHARGINGSTOP")==0){
     change = 3;
     Serial2.print(no);
+    }
   }
+    if (strcmp(topic, "MJU/CD4/CHARGING/CAR") == 0) {
+    
+    if (strcmp(str, "PutConnector") == 0) { //차량 진입->해당위치로 이동 단계
+        a = 0;
+    }
   }
 }
 
 void setup() {
   Serial.begin(115200);
+  //Serial1.begin(115200,SERIAL_8N1,2,4); //2번핀 RX
+  pinMode(33,INPUT);
   Serial2.begin(9600);
   dfSerial.begin(9600,SERIAL_8N1,16,17);
   Serial.print("start");
@@ -56,11 +67,31 @@ void setup() {
   myMQTTClient.setCallback(cbFunc);
   int result = myMQTTClient.connect("60181793mh");
   myMQTTClient.subscribe("MJU/CD4/CHARGING");
+  myMQTTClient.subscribe("MJU/CD4/CHARGING/CAR");
   printf("MQTT Conn.. Result:%d\r\n",result);
 }
 
+
+
 void loop() {
   myMQTTClient.loop();
+
+  /*if(Serial1.available()>0){
+    v = Serial1.parseInt();
+    Serial.print(v);
+    Serial.println("connect");
+      a++;
+      Serial.println(a);
+  }*/
+  int signal = analogRead(33);
+  Serial.println(signal);
+
+  if(a == 1){
+    Serial.println("ss");
+    myMQTTClient.publish("MJU/CD4/CHARGING","READY2");
+    delay(300);
+    myMQTTClient.publish("MJU/CD4/CHARGING/CAR","Success");
+  }
 }
 
 void receiveEvent(int parameter){

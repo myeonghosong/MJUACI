@@ -49,6 +49,7 @@ void cbFunc(const char topic[],byte *data, unsigned int length){
 
 void setup() {
   Serial.begin(115200);
+  //Serial1.begin(115200, SERIAL_8N1, 2, 7);
   Serial.print("start");
   WiFi.mode(WIFI_MODE_STA);
   WiFi.begin("MJU_WIFI","mjuwlan!");
@@ -56,7 +57,9 @@ void setup() {
   pinMode(5,OUTPUT); //회수시스템
   pinMode(6,OUTPUT);
   pinMode(3,OUTPUT); //차량출입센서
+  pinMode(2,OUTPUT); // 충전신호
 
+  
   digitalWrite(4,LOW);
   while(1)
   {
@@ -76,11 +79,15 @@ void setup() {
 unsigned long long lastMs;
 
 void loop() {
-
+  
+  digitalWrite(2,HIGH);
   carsensor = map(analogRead(3), 0, 1023, 0, 5000);
+  int i = 3;
+  Serial1.println(i);
 
   if(millis()-lastMs >= 1000)
-  {
+  { 
+    
     lastMs=millis();
     if(cable == 0){
       analogWrite(5, 0);

@@ -8,6 +8,7 @@
 #define motorpin2 6
 #define motorpin3 10
 #define motorpin4 11
+#define Mag_PIN 9
 
 
 SoftwareSerial mySerial(13,12);
@@ -17,6 +18,7 @@ float wheel_dia = 322; //102.44;
 float distance_per_pulse = wheel_dia / 360;
 float turn_factor = ((270*PI)/4)/distance_per_pulse;
 int checkflag = 0;
+int LRflag = 0;
 
 const byte interruptPin1 = 2; //left
 const byte interruptPin2 = 3; //right
@@ -68,10 +70,6 @@ void setup()
   //step_move();
 
   while(1){
-  if(Serial.available()>0){
-    int v = Serial.parseInt();
-    mySerial.println(v);
-  }
 
   if(mySerial.available()>0){   
     target_pix = mySerial.parseInt();
@@ -100,7 +98,8 @@ void setup()
           Serial.println("Z axis success!!");
           target_temp += 53;
           Serial.print("current : "); Serial.println(target_temp);
-          target_value = (target_temp - 50) * 20;
+          //target_value = (target_temp - 50) * 20; // 얘가 찾는코드
+          target_value = 4000; //얘가 스텝 고정코드
           step_move();
           flagz = 0;
         }
@@ -114,6 +113,12 @@ void setup()
       
       else if(target_pix == 13000){
         motor_speed = 100;
+      }
+      else if(target_pix == 15000){
+        digitalWrite(Mag_PIN, HIGH);
+      }
+      else if(target_pix == 16000){
+        digitalWrite(Mag_PIN, LOW);
       }
 
       else if(target_pix >= 20000){ //DC 입력값은 전진 20000 ~ 22999 / 후진 23000 ~ 24999 / 좌회전 27777 / 우회전 28888
@@ -142,41 +147,49 @@ void setup()
             if(start_flag == 0) {
               dc_forward();
               start_flag = 1;
+              LRflag = 0;
             }
             else if(start_flag == -1){
               dc_backward();
               start_flag = 1;
+              LRflag = 0;
             }
             else if(start_flag == 2){
               dc_left();
               start_flag = 1;
+              LRflag = 1;
             }
             else if(start_flag == 3){
               dc_right();
               start_flag = 1;
+              LRflag = 1;
             }
 
             if(prev_rot_count1 != count1) prev_rot_count1 = count1;
             if(prev_rot_count2 != count2) prev_rot_count2 = count2;
 
-            if(left_flag == 0 || right_flag == 0){
+            /*if(left_flag == 0 || right_flag == 0){ //엔코더 카운트
               Serial.print("Left count : "); Serial.print(prev_rot_count1);
               Serial.print("  Right count : "); Serial.println(prev_rot_count2);
-            }
+            }*/
 
             if(prev_rot_count1 >= target_pulse1){
               left_stop();
               left_flag = 1;
+              checkflag = 1;
             }
             if(prev_rot_count2 >= target_pulse2){
               right_stop();
               right_flag = 1;
+              checkflag = 1;
             }
             
             checkpoint = analogRead(A2);
+            Serial.print("수발광센싱 : ");
+            Serial.println(checkpoint);
             
           
-            if((checkpoint < 950)&&(checkflag == 0)){ // 체크포인트 흰색 나오면 멈춤
+            if((checkpoint < 950)&&(checkflag == 0)&&(LRflag == 0)){ // 체크포인트 흰색 나오면 멈춤
               Serial.println("체크포인트 도달");
               
               left_stop();
@@ -185,14 +198,20 @@ void setup()
               right_flag = 1;
               checkflag = 1;
               mySerial.println(checkflag);
+              Serial.println("Checkpoint");
             }
-            if(checkpoint >= 950){
+            if(checkpoint >= 1020){
               checkflag = 0;
             }
         
             if(left_flag == 1 && right_flag == 1){
+              if(LRflag == 1){
+                mySerial.println(1);
+                checkflag = 1;
+                Serial.println("chackend");
+              }
               resetencode();
-              mySerial.println("done!");
+              //mySerial.println("done!");
               break;
             }
           }
@@ -266,6 +285,7 @@ void motor_setup(){
   pinMode(motorpin3, OUTPUT);
   pinMode(motorpin4, OUTPUT);
   pinMode(A2,INPUT);
+  pinMode(9,OUTPUT);
 }
 
 void step_move(){
@@ -315,7 +335,7 @@ void right_stop(){
 void dc_forward(){
   analogWrite(motorpin1, motor_speed);
   analogWrite(motorpin2, 0);
-  analogWrite(motorpin3, motor_speed);
+  analogWrite(motorpin3, motor_speed-10);
   analogWrite(motorpin4, 0);
   Serial.println("Forward");
 }
@@ -324,23 +344,22 @@ void dc_backward(){
   analogWrite(motorpin1, 0);
   analogWrite(motorpin2, motor_speed);
   analogWrite(motorpin3, 0);
-  analogWrite(motorpin4, motor_speed);
+  analogWrite(motorpin4, motor_speed-10);
   Serial.println("Backward");
-
 }
 
 void dc_right(){
   analogWrite(motorpin1, motor_speed);
   analogWrite(motorpin2, 0);
   analogWrite(motorpin3, 0);
-  analogWrite(motorpin4, motor_speed);
+  analogWrite(motorpin4, motor_speed-10);
   Serial.println("right");
 }
 
 void dc_left(){
   analogWrite(motorpin1, 0);
   analogWrite(motorpin2, motor_speed);
-  analogWrite(motorpin3, motor_speed);
+  analogWrite(motorpin3, motor_speed-10);
   analogWrite(motorpin4, 0);
   Serial.println("left");
 }

@@ -168,8 +168,8 @@ void InverseKinematics(float x_data, float y_data){
 }
 
 void loop() { 
-  if(mySerial.available()){
-    int target = mySerial.parseInt();
+  if(Serial2.available()){
+    int target = Serial2.parseInt();
     if( target > 0 && target < 1000){ // 로봇팔 중앙으로
       if(rotate_flag == 2){  // 왼쪽에서 중앙으로
         moving_servo(60);    // 왼쪽에서 끝까지 당김
