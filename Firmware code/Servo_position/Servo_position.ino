@@ -112,9 +112,9 @@ void setup() {
   dxl.setOperatingMode(DXL_3, OP_POSITION);
   dxl.torqueOn(DXL_3);
 
-  dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_1, 0);
-  dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_2, 0);
-  dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_3, 0);
+  dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_1, 120);
+  dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_2, 120);
+  dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_3, 120);
 
   moving_servo(60);
 }

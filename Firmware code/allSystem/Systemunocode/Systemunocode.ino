@@ -105,7 +105,7 @@ void setup()
         }
       }
       else if(target_pix >= 10000 && target_pix < 11000){
-        motor_speed = 60;
+        motor_speed = 100;
         target_mm = target_pix - 10000;
         target_value = (target_mm - 50) * 20;
         step_move();
@@ -119,6 +119,39 @@ void setup()
       }
       else if(target_pix == 16000){
         digitalWrite(Mag_PIN, LOW);
+      }
+      // DC 영상처리 이동
+      else if(target_pix == 19100) //후진
+      {
+        dc_backward();
+        delay(150);
+        dc_stop();
+      }
+      else if(target_pix == 19200){
+        dc_backward();
+        delay(80);
+        dc_stop();
+      }
+      else if(target_pix == 19300){
+        dc_backward();
+        delay(20);
+        dc_stop();
+      }
+
+      else if(target_pix == 19600){ // 전진
+        dc_forward();
+        delay(150);
+        dc_stop();
+      }
+      else if(target_pix == 19700){
+        dc_forward();
+        delay(80);
+        dc_stop();
+      }
+      else if(target_pix == 19800){
+        dc_forward();
+        delay(20);
+        dc_stop();
       }
 
       else if(target_pix >= 20000){ //DC 입력값은 전진 20000 ~ 22999 / 후진 23000 ~ 24999 / 좌회전 27777 / 우회전 28888
@@ -200,7 +233,12 @@ void setup()
               mySerial.println(checkflag);
               Serial.println("Checkpoint");
             }
-            if(checkpoint >= 1020){
+
+            if((checkflag == 1)&&(checkpoint >= 1020)){
+              delay(800);
+              checkflag = 0;
+            }
+            else if(checkpoint >= 1020){
               checkflag = 0;
             }
         

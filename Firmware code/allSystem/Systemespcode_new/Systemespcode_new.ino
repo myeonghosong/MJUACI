@@ -29,18 +29,21 @@ unsigned long long lastMS2 = 0;
 
 int xdata = 0;
 int ydata = 0;
-int zdata = 0;
-
+int zdata = 215;
 
 //커넥터 높이, 충전구 높이
 int connector_step = 10070; // 커넥터 스텝높이
-int connector_servo = 2135; // 커넥터 서보깊이
-int port_step = 10250; // 충전구 스텝높이
-int port_servo = 1117;
+int connector_servo = 2140; // 커넥터 서보깊이
+int port_step = 10255; // 충전구 스텝높이
+int port_servo = 1105; // 충전구 서보깊이
 
 int flagz = 0;
 int flagy = 0;
 int flagx = 0;
+
+int dc_flag = 0;
+int st_flag = 0;
+int st_offset = 0;
 
 WiFiClient myTCPClient;
 PubSubClient myMQTTClient;
@@ -53,36 +56,92 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
   String buffx;
 
   if(topic[17] == 'Z') {
+    int ZZ;
     buffz = DATA;
-    zdata = buffz.toInt();
+    ZZ = buffz.toInt();
+
+    if(ZZ == 9999){
+      Serial.println("Z END");
+      st_flag = 0;
+    }
+    else{
+    
+    
+    ZZ = 240 - ZZ;
+    Serial.print("Z data : ");
+    Serial.println(ZZ);
+
+    if(ZZ > 0){
+      if(ZZ > 80){
+        st_offset = 10;
+      }
+      else if((ZZ <= 80)&&(ZZ > 20)){
+        st_offset = 6 ;
+      }
+      else if(ZZ < 20){
+        st_offset = 3;
+      }
+    }
+    else if(ZZ < 0){
+      ZZ = abs(ZZ);
+      if(ZZ > 80){
+        st_offset = -10;
+        
+      }
+      else if((ZZ <= 80)&&(ZZ > 20)){
+        st_offset = -6 ;
+      
+      }
+      else if(ZZ < 20){
+        st_offset = -3;
+      }
+    }
+
     //Serial2.println(zdata);
+    }
+    
   }
   if(topic[17] == 'Y'){
     int B;
     buffy = DATA;
-    /*int b = 0;
-    b = buffy.toInt();
-    Serial.print("Y axis data input :"); Serial.println(b);
-    if(b > 354){
-      b = abs(354-b);
-      b *= 0.4347826087;
-      b += 20000;
-      Serial.print("Go front : "); Serial.println(b);
-      ydata = b;
-    }*/
+
     B = buffy.toInt();
-    B = 354 - B;
+
+    if(B == 99999){
+      Serial.println("Y END");
+      dc_flag = 0;
+    }
+    else{
+    
+    B = 371 - B;
     Serial.print("Y data : ");
     Serial.println(B);
     if(B>0){
-      ydata = (B*0.4347826087) + 23000;
+      if(B>100){
+        ydata = 19100; // 후진
+      }
+      else if((B <= 100)&&(B>15)){
+        ydata = 19200;
+      }
+      else if((B>1)&&(B<=15)){
+        ydata = 19300;
+      }
     }
     else if(B<0){
       B=abs(B);
-      ydata = (B*0.4347826087) + 20000;
+      if(B>100){
+        ydata = 19600; // 전진
+      }
+      else if((B <= 100)&&(B>15)){
+        ydata = 19700;
+      }
+      else if((B>1)&&(B<=15)){
+        ydata = 19800;
+      }
     }
     Serial.println(ydata);
     //Serial2.println(ydata);
+    }
   }
   if(topic[17] == 'X'){           // 서보 중앙   : 60 ~ 170
     buffx = DATA;                 // 서보 왼쪽   : 1060 ~ 1170
@@ -96,7 +155,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
     }
     else if(strcmp(DATA, "CHARGINGSTOP")==0){
       ChargingStart = 0;
-      Serial2.println(13000); //모터스피드100
+      //Serial2.println(13000); //모터스피드100
       SystemAllFlag = 9;
       current = 0;
       SystemDCmove = 21000; //커넥터 (여유있게 줘서 가다가 수발광에 멈추도록?)
@@ -109,7 +168,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
     Serial.println(DATA);
     
     if (strcmp(DATA, "IN") == 0) { //차량 진입->해당위치로 이동 단계
-        Serial2.println(13000); //모터스피드100
+        //Serial2.println(13000); //모터스피드100
         SystemAllFlag = 1;
         SystemDCmove = 21500; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
         SystemFlag = 0;
@@ -132,7 +191,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         Serial2.println(connector_step); //모터스피드 60
     }
     else if(strcmp(DATA, "GoToPort")==0){//차량 충전구로 이동 단계
-        Serial2.println(13000); //모터스피드100
+        //Serial2.println(13000); //모터스피드100
         SystemAllFlag = 4;
         current = 0;
         SystemDCmove = 23700; 
@@ -144,20 +203,24 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         SystemAllFlag = 5;
         current = 0;
         Serial.println("FindPort");
-        Serial2.println(10180);
+        Serial2.println(10215);
+        Serial1.println(1060);
         flagz = 0;
         flagy = 0;
         flagx = 0;
+        zdata = 215;
+        st_flag = 1;
+        dc_flag = 1;
     }
     else if(strcmp(DATA, "Success")==0){//충전연결 성공, 커넥터 꽂은채로 로봇팔 회수 단계
-        Serial2.println(13000); //모터스피드100
+        //Serial2.println(13000); //모터스피드100
         SystemAllFlag = 6;
         current = 0;
         Serial.println("Success");
         Chargingflag = 1;
     }
     else if(strcmp(DATA, "BackForWaiting")==0){//로봇 원래자리로 돌아가는 단계
-        Serial2.println(13000); //모터스피드100
+        //Serial2.println(13000); //모터스피드100
         SystemAllFlag = 7;
         current = 0;
         SystemDCmove = 23600;
@@ -172,7 +235,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         
     }
     else if(strcmp(DATA, "StopCharging")==0){//충전정지신호 받고 로봇 충전구로 이동하는 단계
-        Serial2.println(13000); //모터스피드100
+        //Serial2.println(13000); //모터스피드100
         SystemAllFlag = 9;
         current = 0;
         SystemDCmove = 21000; //커넥터 (여유있게 줘서 가다가 수발광에 멈추도록?)
@@ -187,11 +250,13 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         flagz = 0;
         flagy = 0;
         flagx = 0;
+        st_flag = 1;
+        dc_flag = 1;
     }
     else if(strcmp(DATA, "PutConnector")==0){//커넥터 뽑고 돌려놓으면서 회수시스템 작동 단계
         Serial2.println(15000); //전자석 잡기
         delay(300);
-        Serial2.println(13000); //모터스피드100
+        //Serial2.println(13000); //모터스피드100
         SystemAllFlag = 11;
         current = 0;
         SystemDCmove = 23600; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
@@ -199,7 +264,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         Serial.println("PutConnector");
     }
     else if(strcmp(DATA, "CARINWaiting")==0){//원점으로 돌아가는 단계 끝나면 SystemAllFlag = 0으로 돌아가서 반복
-        Serial2.println(13000); //모터스피드100
+        //Serial2.println(13000); //모터스피드100
         SystemAllFlag = 12;
         current = 0;
         SystemDCmove = 23700; //커넥터 위치로 이동 값 (여유있게 줘서 가다가 수발광에 멈추도록?)
@@ -213,22 +278,22 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
         Serial.println("RESET");
     }
     else if(strcmp(DATA, "TEST_F") == 0){
-      Serial2.println(13000);
+      //Serial2.println(13000);
       delay(200);
       Serial2.println(20300);
     }
     else if(strcmp(DATA, "TEST_B") == 0){
-      Serial2.println(13000);
+      //Serial2.println(13000);
       delay(200);
       Serial2.println(23300);
     }
     else if(strcmp(DATA, "TEST_R") == 0){
-      Serial2.println(13000);
+      //Serial2.println(13000);
       delay(200);
       Serial2.println(28888);
     }
     else if(strcmp(DATA, "TEST_L") == 0){
-      Serial2.println(13000);
+      //Serial2.println(13000);
       delay(200);
       Serial2.println(27777);
     }
@@ -241,7 +306,7 @@ void cbFunc(const char topic[], byte *data, unsigned int length){ //Callback Fun
 
 void setup() {
   Serial.begin(115200);
-  Serial1.begin(115200, SERIAL_8N1, 15, 2);
+  Serial1.begin(115200, SERIAL_8N1, 16, 4);
   Serial2.begin(115200, SERIAL_8N1, 12, 13);
   WiFi_START();
   MQTT_START();
@@ -291,9 +356,9 @@ void loop() {
             delay(300);
             Serial2.println(SystemDCmove);
             delay(500);
-            Serial2.println(10170); //번호판 위치
+            Serial2.println(10150); //번호판 위치
             SystemFlag = 99;
-            delay(1000);
+            delay(3000);
             myMQTTClient.publish("MJU/CD4/CHARGING/CAR","FindCARNUM");
             
         }
@@ -304,7 +369,7 @@ void loop() {
         delay(300);
         Serial1.println(2060); //오른쪽 보기
         delay(500);
-        Serial2.println(10200); // 스텝 높이 200mm
+        Serial2.println(10170); // 스텝 높이 170mm
         SystemFlag = 99;
       }
     }
@@ -328,7 +393,7 @@ void loop() {
     else if(SystemAllFlag == 4){ //차량 충전구로 이동 단계
         if(SystemFlag == 0){ //커넥터 들기 모서리까지 움직이기
             delay(300);
-            Serial2.println(13000);
+            //Serial2.println(13000);
             delay(100);
             Serial1.println(2060);
             delay(1500);
@@ -375,20 +440,21 @@ void loop() {
     else if(SystemAllFlag == 7){ //로봇 원래자리로 돌아가는 단계
         if(SystemFlag == 0){ //모서리까지 움직이기
             delay(300);
-            Serial2.println(13000);
+            //Serial2.println(13000);
             delay(300);
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
             SystemDCmove = 27777;
         }
-        else if(SystemFlag == 1){// 코너 우회전
+        else if(SystemFlag == 1){// 코너 좌회전
             Serial1.println(60);
             delay(300);
             Serial2.println(SystemDCmove);
-            SystemDCmove = 23700;
+            SystemDCmove = 23800;
             
         }
         else if(SystemFlag == 2){
+            delay(500);
             Serial2.println(SystemDCmove);
             SystemFlag = 99;
         }
@@ -473,47 +539,46 @@ void loop() {
     }
 
     else if((SystemAllFlag == 5)||(SystemAllFlag ==10)){ // 커넥터 잡기 or 충전구 삽입
-        if(millis() - lastMS > 5000){
+        if(millis() - lastMS > 4000){
             lastMS = millis();
-            if(zdata <=500 && zdata >= 30){
-              zdata = zdata * 0.337078651685;
-            zdata = zdata + 10000;
-            Serial2.println(zdata); 
-            Serial.print("z axis data : "); Serial.println(zdata);
+            
+            if(dc_flag == 1){
+              Serial2.println(ydata);
             }
-            else if(zdata == 9999){
-            zdata = zdata + 30000;
-            //Serial2.println(zdata);
-            Serial.print("z axis data : "); Serial.println(zdata);
-            flagz = 1;
+            else if(st_flag == 1){
+              zdata += st_offset;
+              int i = zdata + 10000;
+              Serial.println(i);
+              Serial2.println(i);
             }
 
-            if(ydata > 20000 && ydata < 20600){       
-            Serial2.println(ydata);
-            Serial.print("y axis data : "); Serial.println(ydata);
-            }
-            else if(ydata == 99999){
-            Serial.print("y axis data : "); Serial.println(ydata);
-            flagy = 1;
-            }
             if(flagx == 0 && xdata > 50 && xdata < 1000){
             Serial.print("x axis data : "); Serial.println(xdata);
               if(SystemAllFlag == 5){
+                Serial2.println(port_step);
+                delay(200);
+                Serial2.println(port_step);
+                delay(3000);
                 xdata = xdata + 1000;
                 Serial1.println(port_servo);
+                delay(500);
                 myMQTTClient.publish("MJU/CD4/CHARGING/CAR","Success");
                 myMQTTClient.publish("MJU/CD4/CHARGING","READY2");
+                
               }
               else if(SystemAllFlag == 10){
+                Serial2.println(port_step);
+                delay(200);
+                Serial2.println(port_step);
+                delay(3000);
                 xdata = xdata + 1000;
-                Serial1.println(xdata);
-                delay(1500);
+                Serial1.println(port_servo);
+                delay(2000);
                 myMQTTClient.publish("MJU/CD4/CHARGING/CAR","PutConnector");
               }
             
             flagx = 1; // 꽂았을때 신호 안들어오면 서보 당긴 후 다시시도.
             }
-            
         }
     }
     else if(SystemAllFlag == 99){ // 시스템 초기화하는 코드(uno, 서보모터보드에 리셋 코드 보내주는 단계)
