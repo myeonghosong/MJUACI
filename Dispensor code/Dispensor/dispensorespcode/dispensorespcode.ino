@@ -2,7 +2,6 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <Wire.h>
-#include <HardwareSerial.h>
 
 WiFiClient myTCPClient;
 PubSubClient myMQTTClient;
@@ -18,6 +17,7 @@ void cbFunc(const char topic[],byte *data, unsigned int length){
 
   if (strcmp(topic, "MJU/CD4/CHARGING") == 0) {
     if (strcmp(str, "READY2") == 0) {
+
     change = 1;
     digitalWrite(4,LOW);
     }
@@ -27,12 +27,14 @@ void cbFunc(const char topic[],byte *data, unsigned int length){
     }
     else if(strcmp(str, "CHARGINGSTART")==0){
     change = 2;
-    digitalWrite(4,HIGH);
+    Serial1.println(20000);
+    Serial.println("start");
     //neopixelWrite(RGB_BUILTIN,RGB_BRIGHTNESS,0,RGB_BRIGHTNESS); // Blue
     }
     else if(strcmp(str, "CHARGINGSTOP")==0){
     change = 3;
-    digitalWrite(4,LOW);
+    Serial1.println(30000);
+    Serial.println("stop");
     //neopixelWrite(RGB_BUILTIN,0,0,0); // Off / black
     }
     else if(strcmp(str,"DCFRONT")==0){
@@ -49,18 +51,12 @@ void cbFunc(const char topic[],byte *data, unsigned int length){
 
 void setup() {
   Serial.begin(115200);
-  //Serial1.begin(115200, SERIAL_8N1, 2, 7);
+  Serial1.begin(115200, SERIAL_8N1, 16, 4);
+
   Serial.print("start");
   WiFi.mode(WIFI_MODE_STA);
   WiFi.begin("MJU_WIFI","mjuwlan!");
-  pinMode(4,OUTPUT); //스위치
-  pinMode(5,OUTPUT); //회수시스템
-  pinMode(6,OUTPUT);
-  pinMode(3,OUTPUT); //차량출입센서
-  pinMode(2,OUTPUT); // 충전신호
 
-  
-  digitalWrite(4,LOW);
   while(1)
   {
     if(WiFi.waitForConnectResult()==WL_CONNECTED){
@@ -79,50 +75,22 @@ void setup() {
 unsigned long long lastMs;
 
 void loop() {
-  
-  digitalWrite(2,HIGH);
-  carsensor = map(analogRead(3), 0, 1023, 0, 5000);
-  int i = 3;
-  Serial1.println(i);
 
-  if(millis()-lastMs >= 1000)
-  { 
-    
-    lastMs=millis();
-    if(cable == 0){
-      analogWrite(5, 0);
-      analogWrite(6, 0);
-      Serial.printf("STOP\n");
-      cable = 4;
-    }
-    else if(cable == 1){
-      analogWrite(5, 255/5);
-      analogWrite(6, 0);
-      Serial.printf("front\n");
-      cable = 4;
-    }
-    else if(cable == 2){
-      analogWrite(5, 0);
-      analogWrite(6,255/5);
-      Serial.printf("back\n");
-      cable = 4;
-    }
-    if(carsensor >= 10000){
-      car++;
-    }
-    else if(carsensor < 10000){
-      car = 0;
-    }
-    Serial.println(carsensor);
-    Serial.println(car);
-
-    if(car == 3){
-      myMQTTClient.publish("MJU/CD4/CHARGING/CAR","IN");
-    }
+  if(Serial.available()>0){
+    int v = Serial.parseInt();
+    Serial1.println(v);
   }
+
+
+  if(Serial1.available()>0){
+    int sense = Serial1.parseInt();
+    Serial.println(sense);
+    if(sense == 10000){
+        myMQTTClient.publish("MJU/CD4/CHARGING/CAR","IN");
+    }
+
+
   
-
-
-
-  myMQTTClient.loop();
+}
+myMQTTClient.loop();
 }

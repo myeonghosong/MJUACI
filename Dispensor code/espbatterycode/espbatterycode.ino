@@ -6,13 +6,13 @@
 
 WiFiClient myTCPClient;
 PubSubClient myMQTTClient;
-HardwareSerial dfSerial(2);
+//HardwareSerial dfSerial(2);
 
 int v = 0;
 int a = 0;
 
-char* yes ="y";
-char* no = "n";
+//char* yes ="y";
+//char* no = "n";
 char s1;
 unsigned long int change;
 void cbFunc(const char topic[],byte *data, unsigned int length){
@@ -28,11 +28,14 @@ void cbFunc(const char topic[],byte *data, unsigned int length){
     }
     else if(strcmp(str, "CHARGINGSTART")==0){
     change = 2;
-    Serial2.print(yes);
+    Serial2.println(change);
+//    Serial.println(yes);
+
     }
     else if(strcmp(str, "CHARGINGSTOP")==0){
     change = 3;
-    Serial2.print(no);
+    Serial2.println(change);
+  //  Serial.println(no);
     }
   }
     if (strcmp(topic, "MJU/CD4/CHARGING/CAR") == 0) {
@@ -46,9 +49,9 @@ void cbFunc(const char topic[],byte *data, unsigned int length){
 void setup() {
   Serial.begin(115200);
   //Serial1.begin(115200,SERIAL_8N1,2,4); //2번핀 RX
-  pinMode(33,INPUT);
-  Serial2.begin(9600);
-  dfSerial.begin(9600,SERIAL_8N1,16,17);
+  //pinMode(33,INPUT);
+  Serial1.begin(115200, SERIAL_8N1, 16, 4);
+  Serial2.begin(115200, SERIAL_8N1, 13, 12);
   Serial.print("start");
   WiFi.mode(WIFI_MODE_STA);
   WiFi.begin("MJU_WIFI","mjuwlan!");
@@ -59,8 +62,8 @@ void setup() {
 
     else{printf("Something Wrong\r\n"); while(1) sleep(1);}
   }
-  Wire.begin(0x13);
-  Wire.onReceive(receiveEvent);
+  //Wire.begin(0x13);
+  //Wire.onReceive(receiveEvent);
 
   myMQTTClient.setClient(myTCPClient);
   myMQTTClient.setServer("cheese.mju.ac.kr",30220);
@@ -74,6 +77,16 @@ void setup() {
 
 
 void loop() {
+
+  if(Serial1.available()>0){
+    int sence = Serial1.parseInt();
+    char s1[10];
+    Serial.print(sence);
+    Serial.println("%");
+    snprintf(s1,sizeof(s1), "%d", sence);
+    myMQTTClient.publish("MJU/CD4/CHARGING/PER",s1);
+  }
+  
   myMQTTClient.loop();
 
   /*if(Serial1.available()>0){
@@ -83,8 +96,8 @@ void loop() {
       a++;
       Serial.println(a);
   }*/
-  int signal = analogRead(33);
-  Serial.println(signal);
+  //int signal = analogRead(33);
+  //Serial.println(signal);
 
   if(a == 1){
     Serial.println("ss");
@@ -94,7 +107,7 @@ void loop() {
   }
 }
 
-void receiveEvent(int parameter){
+/*void receiveEvent(int parameter){
   while(Wire.available()){
 
     if(change == 0){Serial.print("not ready");}
@@ -109,4 +122,4 @@ void receiveEvent(int parameter){
     snprintf(s1,sizeof(s1), "%d", a);
     myMQTTClient.publish("MJU/CD4/CHARGING/PER",s1);
   }
-}
+}*/

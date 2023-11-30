@@ -53,6 +53,11 @@ int temp = 0;
 int flagy = 1;
 int flagz = 0;
 
+unsigned long long lastMs;
+unsigned long long backDCcheck; // back움직임 값
+int backDCsave = 0;
+int backDCflag = 0; //back움직임 flag
+
 void setup()
 {
   Serial.begin(115200);
@@ -154,6 +159,17 @@ void setup()
         dc_stop();
       }
 
+
+      else if(target_pix == 17700){ // back check
+        backDCflag = 1;
+      }
+      else if(target_pix == 17800){ // 회수 DC
+        dc_forward();
+        delay(backDCsave);
+        dc_stop();
+        backDCsave = 0;
+      }
+
       else if(target_pix >= 20000){ //DC 입력값은 전진 20000 ~ 22999 / 후진 23000 ~ 24999 / 좌회전 27777 / 우회전 28888
         dc_target = target_pix - 20000; // 전진 0 ~ 2999 / 후진 3000 ~ 4999 / 좌회전 7777 / 우회전 8888
         if (dc_target != 0){
@@ -222,11 +238,10 @@ void setup()
             Serial.println(checkpoint);
             
           
-            if((checkpoint < 950)&&(checkflag == 0)&&(LRflag == 0)){ // 체크포인트 흰색 나오면 멈춤
+            if((checkpoint < 1005)&&(checkflag == 0)&&(LRflag == 0)){ // 체크포인트 흰색 나오면 멈춤
               Serial.println("체크포인트 도달");
               
-              left_stop();
-              right_stop();
+              dc_stop();
               left_flag = 1;
               right_flag = 1;
               checkflag = 1;
@@ -349,6 +364,9 @@ void step_forward()
 
 void step_backward()
 {
+  if(backDCflag == 1){
+    lastMs = milis();
+  }
   digitalWrite(ENA_PIN, LOW);
   digitalWrite(DIR_PIN, LOW);
   digitalWrite(STEP_PIN, HIGH);
@@ -408,5 +426,10 @@ void dc_stop(){
   analogWrite(motorpin2, 0);
   analogWrite(motorpin3, 0);
   analogWrite(motorpin4, 0);
+  if(backDCflag == 1){
+    backDCcheck = milis();
+    backDCsave = backDCcheck - lastMs;
+    backDCflag = 0;
+  }
   Serial.println("stop");
 }
