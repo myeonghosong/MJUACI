@@ -2,6 +2,10 @@ import psycopg2
 import time
 import copy
 import paho.mqtt.client as mqtt
+import sys
+
+sys.path.append('C:/Users/sitepackages')
+sys.path.append('C:/Users/sitepackages')
 
 # PostgreSQL 연결 정보 설정
 connection = psycopg2.connect(

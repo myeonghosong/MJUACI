@@ -119,7 +119,7 @@ void setup()
       else if(target_pix == 13000){
         motor_speed = 100;
       }
-      else if(target_pix == 15000){
+      else if(target_pix == 15000){//전자석
         digitalWrite(Mag_PIN, HIGH);
       }
       else if(target_pix == 16000){
@@ -183,7 +183,7 @@ void setup()
           Serial.print("Input data : "); Serial.println(dc_target);
           target_pulse1 = (dc_target / distance_per_pulse) - 10;
           target_pulse2 = (dc_target / distance_per_pulse) - 10;
-          Serial.print("Target rotation count : "); Serial.println(target_pulse1+10);
+          Serial.print("Target rotation count : "); Serial.println(target_pulse1);
           if(dc_target == 7777) { //left
             start_flag = 2;
             target_pulse1 = turn_factor;
@@ -224,7 +224,7 @@ void setup()
               Serial.print("  Right count : "); Serial.println(prev_rot_count2);
             }*/
 
-            if(prev_rot_count1 >= target_pulse1){
+            if(prev_rot_count1 >= target_pulse1-10){ // 여기가 조정하는거
               left_stop();
               left_flag = 1;
               checkflag = 1;
@@ -240,7 +240,7 @@ void setup()
             Serial.println(checkpoint);
             
           
-            if((checkpoint < 1005)&&(checkflag == 0)&&(LRflag == 0)){ // 체크포인트 흰색 나오면 멈춤
+            if((checkpoint < 960)&&(checkflag == 0)&&(LRflag == 0)){ // 체크포인트 흰색 나오면 멈춤
               Serial.println("체크포인트 도달");
               
               dc_stop();
@@ -252,7 +252,7 @@ void setup()
             }
 
             if((checkflag == 1)&&(checkpoint >= 1020)){
-              delay(800);
+              delay(400);
               checkflag = 0;
             }
             else if(checkpoint >= 1020){
