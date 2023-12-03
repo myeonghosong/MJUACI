@@ -21,7 +21,7 @@ char ssid[] = "MJU_WIFI";                              //WiFi ssid
 char psw[] = "mjuwlan!";                   //Wifi password
 char mqttSV[] = "cheese.mju.ac.kr";               //MQTT data
 uint16_t mqttPN = 30220;                          //MQTT port number
-char mqttTSNM[] = "TESTjaemin01";                 //MQTT test connect
+char mqttTSNM[] = "CD4CARBATESP";                 //MQTT test connect
 char mqttSysStep[] = "MJU/CD4/CHARGING/CAR";  //시스템 스텝
 
 WiFiClient myTCPClient;

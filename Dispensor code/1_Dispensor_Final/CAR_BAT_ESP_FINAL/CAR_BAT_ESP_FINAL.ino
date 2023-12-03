@@ -2,17 +2,15 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <Wire.h>
-#include <HardwareSerial.h>
+
 
 WiFiClient myTCPClient;
 PubSubClient myMQTTClient;
-//HardwareSerial dfSerial(2);
+
 
 int v = 0;
 int a = 0;
 
-//char* yes ="y";
-//char* no = "n";
 char s1;
 unsigned long int change;
 void cbFunc(const char topic[],byte *data, unsigned int length){
@@ -28,14 +26,14 @@ void cbFunc(const char topic[],byte *data, unsigned int length){
     }
     else if(strcmp(str, "CHARGINGSTART")==0){
     change = 2;
+    Serial.print("aa : ");
+    Serial.println(change);
     Serial2.println(change);
-//    Serial.println(yes);
-
     }
     else if(strcmp(str, "CHARGINGSTOP")==0){
     change = 3;
+    Serial.println(change);
     Serial2.println(change);
-  //  Serial.println(no);
     }
   }
     if (strcmp(topic, "MJU/CD4/CHARGING/CAR") == 0) {
@@ -50,15 +48,15 @@ void setup() {
   Serial.begin(115200);
   //Serial1.begin(115200,SERIAL_8N1,2,4); //2번핀 RX
   //pinMode(33,INPUT);
-  Serial1.begin(115200, SERIAL_8N1, 16, 4);
-  Serial2.begin(115200, SERIAL_8N1, 13, 12);
-  Serial.print("start");
+  Serial1.begin(115200, SERIAL_8N1, 16, 4);   // 배터리 센싱
+  Serial2.begin(115200, SERIAL_8N1, 13, 12);  // 릴레이 동작
+  Serial.print("Serial start\n");
   WiFi.mode(WIFI_MODE_STA);
   WiFi.begin("MJU_WIFI","mjuwlan!");
   while(1)
   {
     if(WiFi.waitForConnectResult()==WL_CONNECTED){
-      printf ("Connected!\r\n"); break;}
+      printf ("WiFI Connected!\r\n"); break;}
 
     else{printf("Something Wrong\r\n"); while(1) sleep(1);}
   }
@@ -68,7 +66,7 @@ void setup() {
   myMQTTClient.setClient(myTCPClient);
   myMQTTClient.setServer("cheese.mju.ac.kr",30220);
   myMQTTClient.setCallback(cbFunc);
-  int result = myMQTTClient.connect("60181793mh");
+  int result = myMQTTClient.connect("CD4CARBBATESP");
   myMQTTClient.subscribe("MJU/CD4/CHARGING");
   myMQTTClient.subscribe("MJU/CD4/CHARGING/CAR");
   printf("MQTT Conn.. Result:%d\r\n",result);
@@ -77,18 +75,17 @@ void setup() {
 
 
 void loop() {
-
-  if(Serial1.available()>0){
+  if(Serial1.available()){
     int sence = Serial1.parseInt();
-    char s1[10];
-    Serial.print(sence);
-    Serial.println("%");
-    snprintf(s1,sizeof(s1), "%d", sence);
-    myMQTTClient.publish("MJU/CD4/CHARGING/PER",s1);
+    if(sence != 0){
+      char s1[10];
+      Serial.print(sence);
+      Serial.println("%");
+      snprintf(s1,sizeof(s1), "%d", sence);
+      myMQTTClient.publish("MJU/CD4/CHARGING/PER",s1);
+    }
   }
-  
   myMQTTClient.loop();
-
   /*if(Serial1.available()>0){
     v = Serial1.parseInt();
     Serial.print(v);
@@ -104,6 +101,12 @@ void loop() {
     myMQTTClient.publish("MJU/CD4/CHARGING","READY2");
     delay(300);
     myMQTTClient.publish("MJU/CD4/CHARGING/CAR","Success");
+  }
+
+  if(Serial.available()){
+    int data = Serial.parseInt();
+    if(data == 2) Serial2.print(data);
+    else if(data == 3) Serial2.print(data);
   }
 }
 
