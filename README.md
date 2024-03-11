@@ -3,9 +3,9 @@
 + Current Team Member : 강승구 문소울 송명호 송민중 탁지훈
 + Former Team Member : 강승구 권택희 문소울 송명호 이건희 탁지훈 
   
-# 전기차 자동 충전 인프라
+# 대규모 인프라 확장이 가능한 전기차 자동 충전 시스템
 
-+ Development of an Auto Charging Robot and Vehicle BMS Control System for EV Charging Infrastructure Automation
++ Electric Vehicle(EV) Automatic Charging System Capable of Large-Scale Infrastructure Expansion
 # 
 # ACR
 
