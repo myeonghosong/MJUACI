@@ -28,3 +28,4 @@
 # Charging Module
 + Load Bearing Design & Structural Design - 송민중
 + Material Selection - 송민중
++ Charger Dispensing and Retrieval System - 권택희
