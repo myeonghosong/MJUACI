@@ -6,10 +6,10 @@
 # 대규모 인프라 확장이 가능한 전기차 자동 충전 시스템
 
 + Electric Vehicle(EV) Automatic Charging System Capable of Large-Scale Infrastructure Expansion
-# 
-# ACR
+#
 # 시연영상
 + https://www.youtube.com/watch?v=ZNZEVY_rDRA
+# ACR
 
 + Auto Charging Robot - 탁지훈
 + Image Processing for Extracting Vehicle License Plate Data and Charging Port Coordinates - 송명호, 강승구
